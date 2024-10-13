@@ -93,7 +93,7 @@ std::string GpUnitTestHandlerStatistics::SToString (const GpUnitTestHandlerStati
         std::back_inserter(fmtOutBuffer),
         "[========]: Started at:       {}\n" \
         "[========]: Done at:          {}\n" \
-        "[========]: Total time:       {}s.",
+        "[========]: Total time:       {:.6f}s.",
         GpDateTimeOps::SUnixTsToStr(localCopy.startTs, GpDateTimeFormat::STD_DATE_TIME),
         GpDateTimeOps::SUnixTsToStr(localCopy.finishTs, GpDateTimeFormat::STD_DATE_TIME),
         seconds_t(localCopy.totalTime).Value()

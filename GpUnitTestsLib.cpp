@@ -1,7 +1,7 @@
-#include "GpUnitTestsLib.hpp"
+#include <GpUnitTests/GpUnitTestsLib.hpp>
 
 namespace GPlatform {
 
-GP_IMPLEMENT_LIB(GpUnitTestsLib)
+GP_IMPLEMENT_LIB_REGISTRATOR(GpUnitTestsLib)
 
 }// namespace GPlatform

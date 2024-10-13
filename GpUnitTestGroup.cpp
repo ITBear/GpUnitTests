@@ -52,45 +52,7 @@ size_t  GpUnitTestGroup::FilterTests (std::string_view aFilter)
         return std::size(iTests);
     }
 
-    auto escapeRegexFn = [](std::string_view aSrc) -> std::string
-    {
-        std::string escaped;
-
-        for (const char ch : aSrc)
-        {
-            switch (ch) {
-                case '^': case '$': case '.': case '+': case '?': case '(': case ')':
-                case '[': case ']': case '{': case '}': case '|': case '\\':
-                {
-                    escaped.push_back('\\');
-                    escaped.push_back(ch);
-                } break;
-                default:
-                {
-                    escaped.push_back(ch);
-                } break;
-            }
-        }
-
-        return escaped;
-    };
-
-    auto wildcardToRegexFn = [&](std::string_view pattern) -> std::string
-    {
-        std::string regexPattern    = escapeRegexFn(pattern);
-        size_t      pos             = 0;
-
-        while ((pos = regexPattern.find('*', pos)) != std::string::npos)
-        {
-            regexPattern.replace(pos, 1, ".*");
-            pos += 2;
-        }
-
-        return regexPattern;
-    };
-
-    const std::string regexPattern = wildcardToRegexFn(aFilter);
-    std::regex  rgex(regexPattern);
+    std::regex  rgex = StrOps::SPrepareRegexFilter(aFilter);
     std::smatch match;
 
     for (auto iter = std::begin(iTests); iter != std::end(iTests); /**/)
@@ -111,6 +73,7 @@ size_t  GpUnitTestGroup::FilterTests (std::string_view aFilter)
 
 GpUnitTestHandlerStatistics GpUnitTestGroup::Run (GpUnitTestHandler& aHandler)
 {
+    iRunStartSTS    = GpDateTimeOps::SSteadyTS_us();
     iCurrentHandler = &aHandler;
     aHandler.OnTestGroupRunStart(*this);
 

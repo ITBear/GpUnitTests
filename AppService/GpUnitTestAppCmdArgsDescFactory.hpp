@@ -11,12 +11,12 @@ public:
     CLASS_DD(GpUnitTestAppCmdArgsDescFactory)
 
 public:
-                                        GpUnitTestAppCmdArgsDescFactory     (void) noexcept = default;
-    virtual                             ~GpUnitTestAppCmdArgsDescFactory    (void) noexcept override final = default;
+                    GpUnitTestAppCmdArgsDescFactory     (void) noexcept = default;
+    virtual         ~GpUnitTestAppCmdArgsDescFactory    (void) noexcept override final = default;
 
 public:
-    virtual GpServiceArgBaseDesc::SP    NewInstance                         (const size_t   aArgc,
-                                                                             char**         aArgv) const override final;
+    virtual ResT    NewInstance                         (size_t             aArgc,
+                                                         const char* const  aArgv[]) const override final;
 };
 
 }// namespace GPlatform::UnitTest
