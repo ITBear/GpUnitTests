@@ -10,7 +10,12 @@ namespace GPlatform::UnitTest {
 
 GP_ENUM_IMPL(GpUnitTestGroupRunMode)
 
-GpUnitTestGroup::GpUnitTestGroup (GpUnitTestSuiteGroup::SP aSuite) noexcept:
+GpUnitTestGroup::GpUnitTestGroup
+(
+    std::string                 aName,
+    GpUnitTestSuiteGroup::SP    aSuite
+) noexcept:
+iName {std::move(aName)},
 iSuite{std::move(aSuite)}
 {
 }
@@ -21,7 +26,7 @@ void    GpUnitTestGroup::OnTestFailedExpect
     const SourceLocationT&  aLocation
 )
 {
-    THROW_COND_GP
+    VERIFY
     (
         iCurrentHandler != nullptr,
         "iCurrentHandler is null"_sv
@@ -82,16 +87,13 @@ GpUnitTestHandlerStatistics GpUnitTestGroup::Run (GpUnitTestHandler& aHandler)
     statistics.startTs              = GpDateTimeOps::SUnixTS_ms();
     const microseconds_t startSTS   = GpDateTimeOps::SSteadyTS_us();
 
-    GpRAIIonDestruct onReturn
-    (
-        [&]()
-        {
-            statistics.totalTime    = GpDateTimeOps::SSteadyTS_us() - startSTS;
-            statistics.finishTs     = GpDateTimeOps::SUnixTS_ms();
+    GpRAIIonDestruct onReturn = [&]()
+    {
+        statistics.totalTime    = GpDateTimeOps::SSteadyTS_us() - startSTS;
+        statistics.finishTs     = GpDateTimeOps::SUnixTS_ms();
 
-            aHandler.OnTestGroupRunEnd(*this, statistics);
-        }
-    );
+        aHandler.OnTestGroupRunEnd(*this, statistics);
+    };
 
     if (StartSuite(aHandler) == false)
     {

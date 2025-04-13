@@ -3,8 +3,8 @@
 #include <GpUnitTests/GpUnitTestGroup.hpp>
 #include <GpUnitTests/GpUnitTestSuiteGroup.hpp>
 #include <GpUnitTests/Handlers/GpUnitTestHandlerFactory.hpp>
-#include <GpCore2/GpTasks/ITC/GpItcSharedFuture.hpp>
-#include <GpCore2/GpTasks/ITC/GpItcSharedQueue.hpp>
+#include <GpCore2/GpTasks/ITC/GpItcFuture.hpp>
+#include <GpCore2/GpTasks/ITC/GpItcQueue.hpp>
 #include <GpCore2/GpTasks/GpTask.hpp>
 
 namespace GPlatform::UnitTest {
@@ -18,7 +18,7 @@ class GP_UNIT_TESTS_API GpUnitTestManager
     TAG_SET(THREAD_SAFE)
 
     using DoneFutureT                   = GpTask::DoneFutureT;
-    using SharedQueueT                  = GpItcSharedQueue<GpUnitTestGroup::SP>;
+    using SharedQueueT                  = GpItcQueue<GpUnitTestGroup::SP>;
     using UnitTestSuiteGroupFactoryFnT  = std::function<GpUnitTestSuiteGroup::SP()>;
 
 private:
@@ -34,6 +34,7 @@ public:
 
     template<typename UnitTestSuiteGroupT>
     void                            AddGroupTest        (GpUnitTest::FnT    aTestFn,
+                                                         std::string        aGroupName,
                                                          std::string        aTestName,
                                                          std::string        aTestCommment);
 
@@ -41,6 +42,7 @@ private:
     void                            AddGroupTest        (UnitTestSuiteGroupFactoryFnT   aUnitTestSuiteGroupFactoryFn,
                                                          std::string_view               aUnitTestSuiteGroupTypeDemangleName,
                                                          GpUnitTest::FnT                aTestFn,
+                                                         std::string                    aGroupName,
                                                          std::string                    aTestName,
                                                          std::string                    aTestCommment);
     DoneFutureT::C::Vec::SP         StartRunners        (SharedQueueT::SP&                          aSharedQueue,
@@ -49,7 +51,7 @@ private:
     void                            ProduceTests        (SharedQueueT&              aSharedQueue,
                                                          std::atomic_bool&          aIsProduceDoneRef) NO_THREAD_SAFETY_ANALYSIS;
     void                            WaitForRunners      (DoneFutureT::C::Vec::SP&   aTestRunnerDoneFutures);
-    void                            OnDone              (const std::vector<GpUnitTestHandlerStatistics>&    aStatistics,
+    bool                            OnDone              (const std::vector<GpUnitTestHandlerStatistics>&    aStatistics,
                                                          GpUnitTestHandler&                                 aManagerHandler);
 
 private:
@@ -63,6 +65,7 @@ template<typename UnitTestSuiteGroupT>
 void    GpUnitTestManager::AddGroupTest
 (
     GpUnitTest::FnT aTestFn,
+    std::string     aGroupName,
     std::string     aTestName,
     std::string     aTestCommment
 )
@@ -77,6 +80,7 @@ void    GpUnitTestManager::AddGroupTest
         sFactoryFn,
         typeid(UnitTestSuiteGroupT).name(),
         std::move(aTestFn),
+        std::move(aGroupName),
         std::move(aTestName),
         std::move(aTestCommment)
     );
@@ -89,6 +93,7 @@ public:
     GpUnitTest_Registrator
     (
         GpUnitTest::FnT aTestFn,
+        std::string     aGroupName,
         std::string     aTestName,
         std::string     aTestCommment
     )
@@ -96,6 +101,7 @@ public:
         GpUnitTestManager::S().AddGroupTest<UnitTestClassT>
         (
             std::move(aTestFn),
+            std::move(aGroupName),
             std::move(aTestName),
             std::move(aTestCommment)
         );
@@ -115,6 +121,7 @@ public:
     static ::GPlatform::UnitTest::GpUnitTest_Registrator<UnitTestClass> UnitTestClass##_##TestFn##_Registrator \
     ( \
         UnitTestClass##_##TestFn##CCtx, \
+        #UnitTestClass, \
         #TestFn, \
         TestComment \
     ); \

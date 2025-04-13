@@ -17,11 +17,11 @@ equals(var_link, "static") {
 
 # ----------- Libraries -----------
 equals(var_os, "windows") {
-	LIBS += -lGpService$$TARGET_POSTFIX
-	LIBS += -lGpLogCore$$TARGET_POSTFIX
-	LIBS += -lGpTasks$$TARGET_POSTFIX
-	LIBS += -lGpReflection$$TARGET_POSTFIX
-	LIBS += -lGpUtils$$TARGET_POSTFIX
+	LIBS += -lGpService$$TARGET_POSTFIX$$_VER_MAJ
+	LIBS += -lGpLogCore$$TARGET_POSTFIX$$_VER_MAJ
+	LIBS += -lGpTasks$$TARGET_POSTFIX$$_VER_MAJ
+	LIBS += -lGpReflection$$TARGET_POSTFIX$$_VER_MAJ
+	LIBS += -lGpUtils$$TARGET_POSTFIX$$_VER_MAJ
 }
 
 equals(var_os, "linux") {
@@ -71,7 +71,6 @@ HEADERS += \
     Handlers/GpUnitTestHandler.hpp \
     Handlers/GpUnitTestHandlerFactory.hpp \
     Handlers/GpUnitTestHandlerStatistics.hpp \
-    Handlers/GpUnitTestHandlers.hpp \
     Handlers/GpUnitTestLayeredHandler.hpp \
     Handlers/GpUnitTestLogOutHandler.hpp \
     Handlers/GpUnitTestLogOutHandlerFactory.hpp

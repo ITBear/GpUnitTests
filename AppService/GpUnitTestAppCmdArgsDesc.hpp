@@ -1,7 +1,7 @@
 #pragma once
 
 #include <GpService/ArgParser/GpServiceArgBaseDesc.hpp>
-#include "../GpUnitTests_globals.hpp"
+#include <GpUnitTests/GpUnitTests_globals.hpp>
 
 namespace GPlatform::UnitTest {
 
@@ -21,7 +21,7 @@ public:
     static void                             SRegister                   (const GpUnitTestAppCmdArgsDesc& aCmdArgsDesc);
 
 public:
-    std::string                             filter;
+    std::string                             unit_test_filter;
 };
 
 }// namespace GPlatform::UnitTest

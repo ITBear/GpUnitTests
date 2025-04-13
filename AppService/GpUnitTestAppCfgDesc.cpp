@@ -1,5 +1,4 @@
-#include "GpUnitTestAppCfgDesc.hpp"
-
+#include <GpUnitTests/AppService/GpUnitTestAppCfgDesc.hpp>
 #include <GpCore2/GpReflection/GpReflectManager.hpp>
 #include <GpCore2/GpReflection/GpReflectPropUtils.hpp>
 #include <GpCore2/GpUtils/Types/Containers/GpGlobalStructCatalogC.hpp>
@@ -15,12 +14,12 @@ GpUnitTestAppCfgDesc::GpUnitTestAppCfgDesc (void) noexcept
 }
 
 GpUnitTestAppCfgDesc::GpUnitTestAppCfgDesc (const GpUnitTestAppCfgDesc& aDesc):
-GpServiceCfgBaseDesc(aDesc)
+GpServiceCfgBaseDesc{aDesc}
 {
 }
 
 GpUnitTestAppCfgDesc::GpUnitTestAppCfgDesc (GpUnitTestAppCfgDesc&& aDesc) noexcept:
-GpServiceCfgBaseDesc(std::move(aDesc))
+GpServiceCfgBaseDesc{std::move(aDesc)}
 {
 }
 

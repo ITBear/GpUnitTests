@@ -1,5 +1,5 @@
-#include "GpUnitTestLogOutHandlerFactory.hpp"
-#include "GpUnitTestLogOutHandler.hpp"
+#include <GpUnitTests/Handlers/GpUnitTestLogOutHandlerFactory.hpp>
+#include <GpUnitTests/Handlers/GpUnitTestLogOutHandler.hpp>
 
 namespace GPlatform::UnitTest {
 

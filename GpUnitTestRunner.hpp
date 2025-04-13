@@ -2,7 +2,7 @@
 
 #include <GpUnitTests/Handlers/GpUnitTestHandlerFactory.hpp>
 #include <GpUnitTests/GpUnitTestGroup.hpp>
-#include <GpCore2/GpTasks/ITC/GpItcSharedQueue.hpp>
+#include <GpCore2/GpTasks/ITC/GpItcQueue.hpp>
 #include <GpCore2/GpTasks/Fibers/GpTaskFiber.hpp>
 
 namespace GPlatform::UnitTest {
@@ -13,7 +13,7 @@ public:
     CLASS_REMOVE_CTRS_DEFAULT_MOVE_COPY(GpUnitTestRunner)
     CLASS_DD(GpUnitTestRunner)
 
-    using SharedQueueT = GpItcSharedQueue<GpUnitTestGroup::SP>;
+    using SharedQueueT = GpItcQueue<GpUnitTestGroup::SP>;
 
 public:
                                     GpUnitTestRunner        (size_t                         aId,
@@ -29,7 +29,7 @@ public:
 
     virtual void                    OnStart                 (void) override final;
     virtual GpTaskRunRes::EnumT     OnStep                  (void) override final;
-    virtual void                    OnStop                  (StopExceptionsT& aStopExceptionsOut) noexcept override final;
+    virtual void                    OnStop                  (ExceptionsT& aStopExceptionsOut) noexcept override final;
     virtual void                    OnStopException         (const GpException &aException) noexcept override final;
 
 private:

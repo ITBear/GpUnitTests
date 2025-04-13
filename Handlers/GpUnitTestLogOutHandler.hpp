@@ -12,8 +12,8 @@ public:
     CLASS_DD(GpUnitTestLogOutHandler)
 
 public:
-    inline              GpUnitTestLogOutHandler     (void);
-    inline              GpUnitTestLogOutHandler     (GpUnitTestHandler::SP aSublayerHandler);
+                        GpUnitTestLogOutHandler     (void);
+                        GpUnitTestLogOutHandler     (GpUnitTestHandler::SP aSublayerHandler);
     virtual             ~GpUnitTestLogOutHandler    (void) noexcept override final;
 
     virtual void        OnManagerStart              (void) override;
@@ -49,16 +49,5 @@ public:
 private:
     const GpUUID        iGuid;
 };
-
-GpUnitTestLogOutHandler::GpUnitTestLogOutHandler (void):
-iGuid(GpUUID::SGenRandomV7())
-{
-}
-
-GpUnitTestLogOutHandler::GpUnitTestLogOutHandler (GpUnitTestHandler::SP aSublayerHandler):
-GpUnitTestLayeredHandler(aSublayerHandler),
-iGuid(GpUUID::SGenRandomV7())
-{
-}
 
 }// namespace GPlatform::UnitTest

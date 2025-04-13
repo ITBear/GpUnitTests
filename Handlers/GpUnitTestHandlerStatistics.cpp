@@ -7,32 +7,36 @@
 namespace GPlatform::UnitTest {
 
 GpUnitTestHandlerStatistics::GpUnitTestHandlerStatistics (const GpUnitTestHandlerStatistics& aStatistics) noexcept:
-suiteStartFailedCount(aStatistics.suiteStartFailedCount),
-suiteStopFailedCount (aStatistics.suiteStopFailedCount ),
-passedCount          (aStatistics.passedCount        ),
-failedCount          (aStatistics.failedCount        ),
-skippedCount         (aStatistics.skippedCount       ),
-disabledCount        (aStatistics.disabledCount      ),
-startTs              (aStatistics.startTs            ),
-finishTs             (aStatistics.finishTs           ),
-totalTime            (aStatistics.totalTime          )
+suiteStartFailedCount{aStatistics.suiteStartFailedCount},
+suiteStopFailedCount {aStatistics.suiteStopFailedCount },
+passedCount          {aStatistics.passedCount          },
+failedCount          {aStatistics.failedCount          },
+skippedCount         {aStatistics.skippedCount         },
+disabledCount        {aStatistics.disabledCount        },
+startTs              {aStatistics.startTs              },
+finishTs             {aStatistics.finishTs             },
+totalTime            {aStatistics.totalTime            }
 {
 }
 
 GpUnitTestHandlerStatistics::GpUnitTestHandlerStatistics (GpUnitTestHandlerStatistics&& aStatistics) noexcept:
-suiteStartFailedCount(std::move(aStatistics.suiteStartFailedCount)),
-suiteStopFailedCount (std::move(aStatistics.suiteStopFailedCount )),
-passedCount          (std::move(aStatistics.passedCount          )),
-failedCount          (std::move(aStatistics.failedCount          )),
-skippedCount         (std::move(aStatistics.skippedCount         )),
-disabledCount        (std::move(aStatistics.disabledCount        )),
-startTs              (std::move(aStatistics.startTs              )),
-finishTs             (std::move(aStatistics.finishTs             )),
-totalTime            (std::move(aStatistics.totalTime            ))
+suiteStartFailedCount{std::move(aStatistics.suiteStartFailedCount)},
+suiteStopFailedCount {std::move(aStatistics.suiteStopFailedCount )},
+passedCount          {std::move(aStatistics.passedCount          )},
+failedCount          {std::move(aStatistics.failedCount          )},
+skippedCount         {std::move(aStatistics.skippedCount         )},
+disabledCount        {std::move(aStatistics.disabledCount        )},
+startTs              {std::move(aStatistics.startTs              )},
+finishTs             {std::move(aStatistics.finishTs             )},
+totalTime            {std::move(aStatistics.totalTime            )}
 {
 }
 
-std::string GpUnitTestHandlerStatistics::SToString (const GpUnitTestHandlerStatistics& aStatistics)
+std::string GpUnitTestHandlerStatistics::SToString
+(
+    const GpUnitTestHandlerStatistics&  aStatistics,
+    const bool                          aIsTotal
+)
 {
     const GpUnitTestHandlerStatistics localCopy(aStatistics);
 
@@ -44,7 +48,7 @@ std::string GpUnitTestHandlerStatistics::SToString (const GpUnitTestHandlerStati
         fmt::format_to
         (
             std::back_inserter(fmtOutBuffer),
-            "[!!!!!!!!]: ENV START FAILED: {} <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< \n",
+            "\033[31m[!!!!!!!!]: ENV START FAILED: {} <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<\033[0m\n",
             std::to_string(localCopy.suiteStartFailedCount)
         );
     }
@@ -54,19 +58,28 @@ std::string GpUnitTestHandlerStatistics::SToString (const GpUnitTestHandlerStati
         fmt::format_to
         (
             std::back_inserter(fmtOutBuffer),
-            "[!!!!!!!!]: ENV STOP FAILED: {} <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< \n",
+            "\033[31m[!!!!!!!!]: ENV STOP FAILED: {} <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<\033[0m\n",
             std::to_string(localCopy.suiteStopFailedCount)
         );
     }
 
+    const std::string totalPrefix   = aIsTotal ? "TOTAL " : "";
+    const std::string totalPostfix  = aIsTotal ? ""       : "      ";
+
     fmt::format_to
     (
         std::back_inserter(fmtOutBuffer),
-        "[========]: PASSED:           {}\n" \
-        "[========]: SKIPPED:          {}\n" \
-        "[========]: DISABLED:         {}\n",
+        "[========]: {}PASSED:     {}{}\n" \
+        "[========]: {}SKIPPED:    {}{}\n" \
+        "[========]: {}DISABLED:   {}{}\n",
+        totalPrefix,
+        totalPostfix,
         std::to_string(localCopy.passedCount),
+        totalPrefix,
+        totalPostfix,
         std::to_string(localCopy.skippedCount),
+        totalPrefix,
+        totalPostfix,
         std::to_string(localCopy.disabledCount)
     );
 
@@ -75,7 +88,9 @@ std::string GpUnitTestHandlerStatistics::SToString (const GpUnitTestHandlerStati
         fmt::format_to
         (
             std::back_inserter(fmtOutBuffer),
-            "[========]: FAILED:           {}\n",
+            "[========]: {}FAILED:     {}{}\n",
+            totalPrefix,
+            totalPostfix,
             std::to_string(localCopy.failedCount)
         );
     } else
@@ -83,7 +98,9 @@ std::string GpUnitTestHandlerStatistics::SToString (const GpUnitTestHandlerStati
         fmt::format_to
         (
             std::back_inserter(fmtOutBuffer),
-            "[!!!!!!!!]: FAILED:           {} <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<\n",
+            "\033[31m[!!!!!!!!]: {}FAILED:     {}{} <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<\033[0m\n",
+            totalPrefix,
+            totalPostfix,
             std::to_string(localCopy.failedCount)
         );
     }
@@ -182,6 +199,13 @@ GpUnitTestHandlerStatistics&    GpUnitTestHandlerStatistics::operator= (GpUnitTe
     totalTime               = std::move(aStatistics.totalTime);
 
     return *this;
+}
+
+bool    GpUnitTestHandlerStatistics::IsAnyFailed (void) const noexcept
+{
+    return (suiteStartFailedCount > 0)
+        || (suiteStopFailedCount > 0)
+        || (failedCount > 0);
 }
 
 }// namespace GPlatform::UnitTest

@@ -1,5 +1,4 @@
-#include "GpUnitTestAppCmdArgsDesc.hpp"
-
+#include <GpUnitTests/AppService/GpUnitTestAppCmdArgsDesc.hpp>
 #include <GpCore2/GpReflection/GpReflectManager.hpp>
 #include <GpCore2/GpReflection/GpReflectPropUtils.hpp>
 #include <GpCore2/GpUtils/Types/Containers/GpGlobalStructCatalogC.hpp>
@@ -15,14 +14,14 @@ GpUnitTestAppCmdArgsDesc::GpUnitTestAppCmdArgsDesc (void) noexcept
 }
 
 GpUnitTestAppCmdArgsDesc::GpUnitTestAppCmdArgsDesc (const GpUnitTestAppCmdArgsDesc& aDesc):
-GpServiceArgBaseDesc(aDesc),
-filter(aDesc.filter)
+GpServiceArgBaseDesc{aDesc},
+unit_test_filter{aDesc.unit_test_filter}
 {
 }
 
 GpUnitTestAppCmdArgsDesc::GpUnitTestAppCmdArgsDesc (GpUnitTestAppCmdArgsDesc&& aDesc) noexcept:
-GpServiceArgBaseDesc(std::move(aDesc)),
-filter(std::move(aDesc.filter))
+GpServiceArgBaseDesc{std::move(aDesc)},
+unit_test_filter{std::move(aDesc.unit_test_filter)}
 {
 }
 
@@ -32,7 +31,7 @@ GpUnitTestAppCmdArgsDesc::~GpUnitTestAppCmdArgsDesc (void) noexcept
 
 void    GpUnitTestAppCmdArgsDesc::_SReflectCollectProps (GpReflectProp::SmallVecVal& aPropsOut)
 {
-    PROP(filter);
+    PROP(unit_test_filter);
 }
 
 const GpUnitTestAppCmdArgsDesc& GpUnitTestAppCmdArgsDesc::SGet (void)

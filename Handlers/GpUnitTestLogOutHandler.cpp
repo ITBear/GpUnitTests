@@ -1,12 +1,22 @@
-#include "GpUnitTestLogOutHandler.hpp"
-#include "../GpUnitTestAssert.hpp"
-#include "GpUnitTestGroup.hpp"
-
+#include <GpUnitTests/Handlers/GpUnitTestLogOutHandler.hpp>
+#include <GpUnitTests/GpUnitTestAssert.hpp>
+#include <GpUnitTests/GpUnitTestGroup.hpp>
 #include <GpLog/GpLogCore/GpLog.hpp>
 
 namespace GPlatform::UnitTest {
 
-GpUnitTestLogOutHandler::~GpUnitTestLogOutHandler   (void) noexcept
+GpUnitTestLogOutHandler::GpUnitTestLogOutHandler (void):
+iGuid{GpUUID::SGenRandomV7()}
+{
+}
+
+GpUnitTestLogOutHandler::GpUnitTestLogOutHandler (GpUnitTestHandler::SP aSublayerHandler):
+GpUnitTestLayeredHandler{aSublayerHandler},
+iGuid{GpUUID::SGenRandomV7()}
+{
+}
+
+GpUnitTestLogOutHandler::~GpUnitTestLogOutHandler (void) noexcept
 {   
 }
 
@@ -20,8 +30,73 @@ void    GpUnitTestLogOutHandler::OnManagerDone (const GpUnitTestHandlerStatistic
     std::string msg;
     msg.reserve(1024);
 
-    msg.append("[========]: --------------------------- DONE ALL TESTS: ---------------------------\n"_sv);
-    msg.append(GpUnitTestHandlerStatistics::SToString(aStatistics));
+#if defined(GP_OS_WINDOWS)
+    if (aStatistics.failedCount == 0)
+    {
+        msg.append("\n");
+        msg.append("             |||||   ||||||  |||    || |||||||      |||||  ||      ||          |||||||| ||||||| ||||||| ||||||||\n"_sv);
+        msg.append("            ||   || ||    || ||||   || ||          ||   || ||      ||             ||    ||      ||         ||   \n"_sv);
+        msg.append("            ||   || ||    || || ||  || |||||       ||||||| ||      ||             ||    |||||   |||||||    ||   \n"_sv);
+        msg.append("            ||   || ||    || ||  || || ||          ||   || ||      ||             ||    ||           ||    ||   \n"_sv);
+        msg.append("            ||||||   ||||||  ||   |||| |||||||     ||   || ||||||| |||||||        ||    ||||||| |||||||    ||   \n"_sv);
+        msg.append("\033[32m                                                                                                        \n"_sv);
+        msg.append("            ||||||| ||    ||  ||||||  |||||| ||||||| ||||||| ||||||| ||||||| ||    || ||      ||      ||    ||  \n"_sv);
+        msg.append("            ||      ||    || ||      ||      ||      ||      ||      ||      ||    || ||      ||       ||  ||   \n"_sv);
+        msg.append("            ||||||| ||    || ||      ||      |||||   ||||||| ||||||| |||||   ||    || ||      ||        ||||    \n"_sv);
+        msg.append("                 || ||    || ||      ||      ||           ||      || ||      ||    || ||      ||         ||     \n"_sv);
+        msg.append("            |||||||  ||||||   ||||||  |||||| ||||||| ||||||| ||||||| ||       ||||||  ||||||| |||||||    ||     \n"_sv);
+        msg.append("\033[0m\n\n");
+    } else
+    {
+        msg.append("\n");
+        msg.append("               |||||    ||||||  |||    || |||||||      |||||  ||      ||          |||||||| ||||||| ||||||| ||||||||            \n"_sv);
+        msg.append("               ||   || ||    || ||||   || ||          ||   || ||      ||             ||    ||      ||         ||               \n"_sv);
+        msg.append("               ||   || ||    || || ||  || |||||       ||||||| ||      ||             ||    |||||   |||||||    ||               \n"_sv);
+        msg.append("               ||   || ||    || ||  || || ||          ||   || ||      ||             ||    ||           ||    ||               \n"_sv);
+        msg.append("               ||||||   ||||||  ||   |||| |||||||     ||   || ||||||| |||||||        ||    ||||||| |||||||    ||               \n"_sv);
+        msg.append("\033[31m                                                                                                                       \n"_sv);
+        msg.append("      |||||||| ||   || ||||||| ||||||  |||||||      |||||  ||||||  |||||||     ||||||| ||||||  ||||||   ||||||  ||||||  |||||||\n"_sv);
+        msg.append("         ||    ||   || ||      ||   || ||          ||   || ||   || ||          ||      ||   || ||   || ||    || ||   || ||     \n"_sv);
+        msg.append("         ||    ||||||| |||||   ||||||  |||||       ||||||| ||||||  |||||       |||||   ||||||  ||||||  ||    || ||||||  |||||||\n"_sv);
+        msg.append("         ||    ||   || ||      ||   || ||          ||   || ||   || ||          ||      ||   || ||   || ||    || ||   ||      ||\n"_sv);
+        msg.append("         ||    ||   || ||||||| ||   || |||||||     ||   || ||   || |||||||     ||||||| ||   || ||   ||  ||||||  ||   || |||||||\n"_sv);
+        msg.append("\033[0m\n\n");
+    }
+#else
+    if (aStatistics.failedCount == 0)
+    {
+        msg.append("\n");
+        msg.append("            ██████   ██████  ███    ██ ███████      █████  ██      ██          ████████ ███████ ███████ ████████\n"_sv);
+        msg.append("            ██   ██ ██    ██ ████   ██ ██          ██   ██ ██      ██             ██    ██      ██         ██   \n"_sv);
+        msg.append("            ██   ██ ██    ██ ██ ██  ██ █████       ███████ ██      ██             ██    █████   ███████    ██   \n"_sv);
+        msg.append("            ██   ██ ██    ██ ██  ██ ██ ██          ██   ██ ██      ██             ██    ██           ██    ██   \n"_sv);
+        msg.append("            ██████   ██████  ██   ████ ███████     ██   ██ ███████ ███████        ██    ███████ ███████    ██   \n"_sv);
+        msg.append("\033[32m                                                                                                        \n"_sv);
+        msg.append("            ███████ ██    ██  ██████  ██████ ███████ ███████ ███████ ███████ ██    ██ ██      ██      ██    ██  \n"_sv);
+        msg.append("            ██      ██    ██ ██      ██      ██      ██      ██      ██      ██    ██ ██      ██       ██  ██   \n"_sv);
+        msg.append("            ███████ ██    ██ ██      ██      █████   ███████ ███████ █████   ██    ██ ██      ██        ████    \n"_sv);
+        msg.append("                 ██ ██    ██ ██      ██      ██           ██      ██ ██      ██    ██ ██      ██         ██     \n"_sv);
+        msg.append("            ███████  ██████   ██████  ██████ ███████ ███████ ███████ ██       ██████  ███████ ███████    ██     \n"_sv);
+        msg.append("\033[0m\n\n");
+    } else
+    {
+        msg.append("\n");
+        msg.append("               █████    ██████  ███    ██ ███████      █████  ██      ██          ████████ ███████ ███████ ████████            \n"_sv);
+        msg.append("               ██   ██ ██    ██ ████   ██ ██          ██   ██ ██      ██             ██    ██      ██         ██               \n"_sv);
+        msg.append("               ██   ██ ██    ██ ██ ██  ██ █████       ███████ ██      ██             ██    █████   ███████    ██               \n"_sv);
+        msg.append("               ██   ██ ██    ██ ██  ██ ██ ██          ██   ██ ██      ██             ██    ██           ██    ██               \n"_sv);
+        msg.append("               ██████   ██████  ██   ████ ███████     ██   ██ ███████ ███████        ██    ███████ ███████    ██               \n"_sv);
+        msg.append("\033[31m                                                                                                                       \n"_sv);
+        msg.append("      ████████ ██   ██ ███████ ██████  ███████      █████  ██████  ███████     ███████ ██████  ██████   ██████  ██████  ███████\n"_sv);
+        msg.append("         ██    ██   ██ ██      ██   ██ ██          ██   ██ ██   ██ ██          ██      ██   ██ ██   ██ ██    ██ ██   ██ ██     \n"_sv);
+        msg.append("         ██    ███████ █████   ██████  █████       ███████ ██████  █████       █████   ██████  ██████  ██    ██ ██████  ███████\n"_sv);
+        msg.append("         ██    ██   ██ ██      ██   ██ ██          ██   ██ ██   ██ ██          ██      ██   ██ ██   ██ ██    ██ ██   ██      ██\n"_sv);
+        msg.append("         ██    ██   ██ ███████ ██   ██ ███████     ██   ██ ██   ██ ███████     ███████ ██   ██ ██   ██  ██████  ██   ██ ███████\n"_sv);
+        msg.append("\033[0m\n\n");
+    }
+#endif
+
+    msg.append(GpUnitTestHandlerStatistics::SToString(aStatistics, true));
 
     if (aStatistics.failedCount == 0)
     {
@@ -59,7 +134,7 @@ void    GpUnitTestLogOutHandler::OnTestGroupRunEnd
     msg.reserve(1024);
 
     msg.append("[========]: Done UNIT TEST group '"_sv).append(aUnitTestGroup.Suite()->Name()).append("' RUN...\n"_sv);
-    msg.append(GpUnitTestHandlerStatistics::SToString(aStatistics));
+    msg.append(GpUnitTestHandlerStatistics::SToString(aStatistics, false));
 
     if (aStatistics.failedCount == 0)
     {

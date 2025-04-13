@@ -26,12 +26,14 @@ public:
     using RuningGroupsCountT = std::optional<std::reference_wrapper<std::atomic_size_t>>;
 
 public:
-                                    GpUnitTestGroup     (GpUnitTestSuiteGroup::SP aSuite) noexcept;
+                                    GpUnitTestGroup     (std::string                aName,
+                                                         GpUnitTestSuiteGroup::SP   aSuite) noexcept;
                                     ~GpUnitTestGroup    (void) noexcept = default;
 
     void                            OnTestFailedExpect  (std::string_view       aMsg,
                                                          const SourceLocationT& aLocation);
 
+    std::string_view                Name                (void) const noexcept {return iName;}
     const GpUnitTest::C::Vec::SP&   Tests               (void) const noexcept {return iTests;}
     const GpUnitTestSuiteGroup::SP& Suite               (void) const noexcept {return iSuite;}
     GpUnitTestGroupRunMode::EnumT   RunMode             (void) const noexcept {return iRunMode;}
@@ -45,6 +47,7 @@ private:
     bool                            StopSuite           (GpUnitTestHandler& aHandler);
 
 private:
+    const std::string               iName;
     GpUnitTest::C::Vec::SP          iTests;
     size_t                          iTestExpectFailsCnt = 0;
     GpUnitTestHandler*              iCurrentHandler     = nullptr;

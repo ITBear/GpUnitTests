@@ -1,10 +1,8 @@
 #pragma once
 
 #include <GpCore2/Config/IncludeExt/fmt.hpp>
-
-#include "GpUnitTestAssert.hpp"
-#include "GpUnitTestRunner.hpp"
-
+#include <GpUnitTests/GpUnitTestAssert.hpp>
+#include <GpUnitTests/GpUnitTestRunner.hpp>
 #include <GpCore2/GpUtils/Types/Strings/GpStringOps.hpp>
 
 namespace GPlatform::UnitTest {
@@ -54,7 +52,7 @@ void    _ON_TEST_FAILED
     if constexpr (Mode == GpUnitTestFailMode::ASSERT)
     {
         throw GpUnitTestAssert(message, aLocation);
-    } else
+    } else // Mode == GpUnitTestFailMode::EXPECT
     {
         GpUnitTestRunner::SRunnerByCurrentTask().OnTestFailedExpect(message, aLocation);
     }
@@ -92,7 +90,15 @@ void    _CMP_VALUES
     );
 }
 
-// ----------------------- TRUE -----------------------
+#define _MACRO_STRINGIFY_(ARG) #ARG
+
+// ----------------------------------------- TRUE -----------------------------------------
+#define EXPECT_TRUE(ARG1)                   _EXPECT_TRUE(ARG1, {},           (_MACRO_STRINGIFY_(ARG1)))
+#define EXPECT_TRUE_MSG(ARG1, USER_MESSAGE) _EXPECT_TRUE(ARG1, USER_MESSAGE, (_MACRO_STRINGIFY_(ARG1)))
+
+#define ASSERT_TRUE(ARG1)                   _ASSERT_TRUE(ARG1, {},           (_MACRO_STRINGIFY_(ARG1)))
+#define ASSERT_TRUE_MSG(ARG1, USER_MESSAGE) _ASSERT_TRUE(ARG1, USER_MESSAGE, (_MACRO_STRINGIFY_(ARG1)))
+
 template<GpUnitTestFailMode Mode>
 void    _CHECK_IF_TRUE
 (
@@ -133,9 +139,6 @@ inline void _EXPECT_TRUE
     );
 }
 
-#define EXPECT_TRUE(ARG1)                   _EXPECT_TRUE(ARG1, {},           std::string_view(#ARG1))
-#define EXPECT_TRUE_MSG(ARG1, USER_MESSAGE) _EXPECT_TRUE(ARG1, USER_MESSAGE, std::string_view(#ARG1))
-
 inline void _ASSERT_TRUE
 (
     const bool              aArg1,
@@ -153,10 +156,13 @@ inline void _ASSERT_TRUE
     );
 }
 
-#define ASSERT_TRUE(ARG1)                   _ASSERT_TRUE(ARG1, {},           std::string_view(#ARG1))
-#define ASSERT_TRUE_MSG(ARG1, USER_MESSAGE) _ASSERT_TRUE(ARG1, USER_MESSAGE, std::string_view(#ARG1))
+// ----------------------------------------- FALSE -----------------------------------------
+#define EXPECT_FALSE(ARG1)                   _EXPECT_FALSE(ARG1, {},           (_MACRO_STRINGIFY_(ARG1)))
+#define EXPECT_FALSE_MSG(ARG1, USER_MESSAGE) _EXPECT_FALSE(ARG1, USER_MESSAGE, (_MACRO_STRINGIFY_(ARG1)))
 
-// ----------------------- FALSE -----------------------
+#define ASSERT_FALSE(ARG1)                   _ASSERT_FALSE(ARG1, {},           (_MACRO_STRINGIFY_(ARG1)))
+#define ASSERT_FALSE_MSG(ARG1, USER_MESSAGE) _ASSERT_FALSE(ARG1, USER_MESSAGE, (_MACRO_STRINGIFY_(ARG1)))
+
 template<GpUnitTestFailMode Mode>
 void    _CHECK_IF_FALSE
 (
@@ -197,9 +203,6 @@ inline void _EXPECT_FALSE
     );
 }
 
-#define EXPECT_FALSE(ARG1)                   _EXPECT_FALSE(ARG1, {},           std::string_view(#ARG1))
-#define EXPECT_FALSE_MSG(ARG1, USER_MESSAGE) _EXPECT_FALSE(ARG1, USER_MESSAGE, std::string_view(#ARG1))
-
 inline void _ASSERT_FALSE
 (
     const bool              aArg1,
@@ -217,170 +220,20 @@ inline void _ASSERT_FALSE
     );
 }
 
-#define ASSERT_FALSE(ARG1)                   _ASSERT_FALSE(ARG1, {},           std::string_view(#ARG1))
-#define ASSERT_FALSE_MSG(ARG1, USER_MESSAGE) _ASSERT_FALSE(ARG1, USER_MESSAGE, std::string_view(#ARG1))
+// ----------------------------------------- EQ -----------------------------------------
+#define EXPECT_EQ(ARG1, ARG2)                   _EXPECT_EQ(ARG1, ARG2, {},           std::string_view(_MACRO_STRINGIFY_(ARG1)), (_MACRO_STRINGIFY_(ARG2)))
+#define EXPECT_EQ_MSG(ARG1, ARG2, USER_MESSAGE) _EXPECT_EQ(ARG1, ARG2, USER_MESSAGE, std::string_view(_MACRO_STRINGIFY_(ARG1)), (_MACRO_STRINGIFY_(ARG2)))
 
-// ------------------- EXCEPTION --------------------
-template<typename T>
-void    _EXPECT_EXCEPTION
-(
-    std::function<void()>   aFn,
-    std::string_view        aUserMessageOnError,
-    std::string_view        aFnAsSrcText,
-    const SourceLocationT&  aLocation = SourceLocationT::current()
-)
-{
-    bool isCatched = false;
+#define ASSERT_EQ(ARG1, ARG2)                   _ASSERT_EQ(ARG1, ARG2, {},           std::string_view(_MACRO_STRINGIFY_(ARG1)), (_MACRO_STRINGIFY_(ARG2)))
+#define ASSERT_EQ_MSG(ARG1, ARG2, USER_MESSAGE) _ASSERT_EQ(ARG1, ARG2, USER_MESSAGE, std::string_view(_MACRO_STRINGIFY_(ARG1)), (_MACRO_STRINGIFY_(ARG2)))
 
-    try
-    {
-        aFn();
-    } catch(const T&)
-    {
-        isCatched = true;
-    }
-
-    _EXPECT_TRUE
-    (
-        isCatched,
-        aUserMessageOnError,
-        aFnAsSrcText,
-        aLocation
-    );
-}
-
-#define EXPECT_EXCEPTION(T, FN_TO_CALL, USER_MESSAGE) _EXPECT_EXCEPTION<T>(FN_TO_CALL, USER_MESSAGE, std::string_view(#FN_TO_CALL))
-
-template<typename T>
-void    _EXPECT_EXCEPTION
-(
-    std::function<void()>                               aFn,
-    std::function<std::optional<std::string>(const T&)> aCheckExFn,
-    std::string_view                                    aUserMessageOnError,
-    std::string_view                                    aFnAsSrcText,
-    const SourceLocationT&                              aLocation = SourceLocationT::current()
-)
-{
-    bool isCatched = false;
-
-    try
-    {
-        aFn();
-    } catch(const T& e)
-    {
-        std::optional<std::string> checkExRes = aCheckExFn(e);
-
-        if (checkExRes.has_value())
-        {
-            _EXPECT_TRUE
-            (
-                false,
-                "Exception expected: "_sv + checkExRes.value(),
-                aFnAsSrcText,
-                aLocation
-            );
-
-            return;
-        }
-
-        isCatched = true;
-    }
-
-    _EXPECT_TRUE
-    (
-        isCatched,
-        aUserMessageOnError,
-        aFnAsSrcText,
-        aLocation
-    );
-}
-
-#define EXPECT_EXCEPTION_CHECK(T, FN_TO_CALL, FN_TO_CHECK, USER_MESSAGE) _EXPECT_EXCEPTION<T>(FN_TO_CALL, FN_TO_CHECK, USER_MESSAGE, std::string_view(#FN_TO_CALL))
-
-template<typename T>
-void    _ASSERT_EXCEPTION
-(
-    std::function<void()>   aFn,
-    std::string_view        aUserMessageOnError,
-    std::string_view        aFnAsSrcText,
-    const SourceLocationT&  aLocation = SourceLocationT::current()
-)
-{
-    bool isCatched = false;
-
-    try
-    {
-        aFn();
-    } catch(const T&)
-    {
-        isCatched = true;
-    }
-
-    _ASSERT_TRUE
-    (
-        isCatched,
-        aUserMessageOnError,
-        aFnAsSrcText,
-        aLocation
-    );
-}
-
-#define ASSERT_EXCEPTION(T, FN_TO_CALL, USER_MESSAGE) _ASSERT_EXCEPTION<T>(FN_TO_CALL, USER_MESSAGE, std::string_view(#FN_TO_CALL))
-
-template<typename T>
-void    _ASSERT_EXCEPTION
-(
-    std::function<void()>                               aFn,
-    std::function<std::optional<std::string>(const T&)> aCheckExFn,
-    std::string_view                                    aUserMessageOnError,
-    std::string_view                                    aFnAsSrcText,
-    const SourceLocationT&                              aLocation = SourceLocationT::current()
-)
-{
-    bool isCatched = false;
-
-    try
-    {
-        aFn();
-    } catch(const T& e)
-    {
-        std::optional<std::string> checkExRes = aCheckExFn(e);
-
-        if (checkExRes.has_value())
-        {
-            _ASSERT_TRUE
-            (
-                false,
-                "Exception expected: "_sv + checkExRes.value(),
-                aFnAsSrcText,
-                aLocation
-            );
-
-            return;
-        }
-
-        isCatched = true;
-    }
-
-    _ASSERT_TRUE
-    (
-        isCatched,
-        "Exception expected: "_sv + aUserMessageOnError,
-        aFnAsSrcText,
-        aLocation
-    );
-}
-
-#define ASSERT_EXCEPTION_CHECK(T, FN_TO_CALL, FN_TO_CHECK, USER_MESSAGE) _ASSERT_EXCEPTION<T>(FN_TO_CALL, FN_TO_CHECK, USER_MESSAGE, std::string_view(#FN_TO_CALL))
-
-// ----------------------- EQ -----------------------
 template<typename           T1,
          typename           T2,
          GpUnitTestFailMode Mode>
 void    _CHECK_EQ
 (
     const T1&               aArg1,
-    const T2&               aArg2,  
+    const T2&               aArg2,
     std::string_view        aUserMessageOnError,
     std::string_view        aArg1AsSrcText,
     std::string_view        aArg2AsSrcText,
@@ -423,15 +276,12 @@ void    _EXPECT_EQ
     );
 }
 
-#define EXPECT_EQ(ARG1, ARG2)                   _EXPECT_EQ(ARG1, ARG2, {},           std::string_view(#ARG1), std::string_view(#ARG2))
-#define EXPECT_EQ_MSG(ARG1, ARG2, USER_MESSAGE) _EXPECT_EQ(ARG1, ARG2, USER_MESSAGE, std::string_view(#ARG1), std::string_view(#ARG2))
-
 template<typename T1,
          typename T2>
 void    _ASSERT_EQ
 (
     const T1&               aArg1,
-    const T2&               aArg2,  
+    const T2&               aArg2,
     std::string_view        aUserMessageOnError,
     std::string_view        aArg1AsSrcText,
     std::string_view        aArg2AsSrcText,
@@ -449,10 +299,13 @@ void    _ASSERT_EQ
     );
 }
 
-#define ASSERT_EQ(ARG1, ARG2)                   _ASSERT_EQ(ARG1, ARG2, {},           std::string_view(#ARG1), std::string_view(#ARG2))
-#define ASSERT_EQ_MSG(ARG1, ARG2, USER_MESSAGE) _ASSERT_EQ(ARG1, ARG2, USER_MESSAGE, std::string_view(#ARG1), std::string_view(#ARG2))
+// ----------------------------------------- NOT EQ -----------------------------------------
+#define EXPECT_NOT_EQ(ARG1, ARG2)                   _EXPECT_NOT_EQ(ARG1, ARG2, {},           (_MACRO_STRINGIFY_(ARG1)), (_MACRO_STRINGIFY_(ARG2)))
+#define EXPECT_NOT_EQ_MSG(ARG1, ARG2, USER_MESSAGE) _EXPECT_NOT_EQ(ARG1, ARG2, USER_MESSAGE, (_MACRO_STRINGIFY_(ARG1)), (_MACRO_STRINGIFY_(ARG2)))
 
-// ----------------------- NOT EQ -----------------------
+#define ASSERT_NOT_EQ(ARG1, ARG2)                   _ASSERT_NOT_EQ(ARG1, ARG2, {},           (_MACRO_STRINGIFY_(ARG1)), (_MACRO_STRINGIFY_(ARG2)))
+#define ASSERT_NOT_EQ_MSG(ARG1, ARG2, USER_MESSAGE) _ASSERT_NOT_EQ(ARG1, ARG2, USER_MESSAGE, (_MACRO_STRINGIFY_(ARG1)), (_MACRO_STRINGIFY_(ARG2)))
+
 template<typename           T1,
          typename           T2,
          GpUnitTestFailMode Mode>
@@ -502,9 +355,6 @@ void    _EXPECT_NOT_EQ
     );
 }
 
-#define EXPECT_NOT_EQ(ARG1, ARG2)                   _EXPECT_NOT_EQ(ARG1, ARG2, {},           std::string_view(#ARG1), std::string_view(#ARG2))
-#define EXPECT_NOT_EQ_MSG(ARG1, ARG2, USER_MESSAGE) _EXPECT_NOT_EQ(ARG1, ARG2, USER_MESSAGE, std::string_view(#ARG1), std::string_view(#ARG2))
-
 template<typename T1,
          typename T2>
 void    _ASSERT_NOT_EQ
@@ -528,7 +378,167 @@ void    _ASSERT_NOT_EQ
     );
 }
 
-#define ASSERT_NOT_EQ(ARG1, ARG2)                   _ASSERT_NOT_EQ(ARG1, ARG2, {},           std::string_view(#ARG1), std::string_view(#ARG2))
-#define ASSERT_NOT_EQ_MSG(ARG1, ARG2, USER_MESSAGE) _ASSERT_NOT_EQ(ARG1, ARG2, USER_MESSAGE, std::string_view(#ARG1), std::string_view(#ARG2))
+// ----------------------------------------- EXCEPTION -----------------------------------------
+//#define EXPECT_EXCEPTION(T, FN_TO_CALL)                    _EXPECT_EXCEPTION<T>(_MACRO_STRINGIFY_(T), FN_TO_CALL, {},          (_MACRO_STRINGIFY_(FN_TO_CALL)))
+//#define EXPECT_EXCEPTION_CHECK(T, FN_TO_CALL, FN_TO_CHECK) _EXPECT_EXCEPTION<T>(_MACRO_STRINGIFY_(T), FN_TO_CALL, FN_TO_CHECK, (_MACRO_STRINGIFY_(FN_TO_CALL)))
+
+#define ASSERT_EXCEPTION(T, FN_TO_CALL)                    _ASSERT_EXCEPTION<T>(_MACRO_STRINGIFY_(T), FN_TO_CALL, {},          (_MACRO_STRINGIFY_(FN_TO_CALL)))
+#define ASSERT_EXCEPTION_CHECK(T, FN_TO_CALL, FN_TO_CHECK) _ASSERT_EXCEPTION<T>(_MACRO_STRINGIFY_(T), FN_TO_CALL, FN_TO_CHECK, (_MACRO_STRINGIFY_(FN_TO_CALL)))
+
+template<typename T>
+void    EXPECT_EXCEPTION
+(
+    std::function<void()>                               aFn,
+    std::function<std::optional<std::string>(const T&)> aCheckExFn,
+    const SourceLocationT&                              aLocation = SourceLocationT::current()
+)
+{
+    try
+    {
+        aFn();
+    } catch(const T& ex)
+    {
+        if (aCheckExFn)
+        {
+            std::optional<std::string> checkExRes = aCheckExFn(ex);
+
+            if (checkExRes.has_value())
+            {
+                GpUnitTestRunner::SRunnerByCurrentTask().OnTestFailedExpect
+                (
+                    fmt::format
+                    (
+                        "Failed to test the exception, error: {}.",
+                        checkExRes.value()
+                    ),
+                    aLocation
+                );
+
+                return;
+            }
+        }
+
+        // OK
+        return;
+    } catch(const std::exception& e)
+    {
+        // Caught the wrong exception
+        GpUnitTestRunner::SRunnerByCurrentTask().OnTestFailedExpect
+        (
+            fmt::format
+            (
+                "Caught the wrong exception. {}",
+                e.what()
+            ),
+            aLocation
+        );
+
+        return;
+    } catch(...)
+    {
+        // Caught the wrong exception
+        GpUnitTestRunner::SRunnerByCurrentTask().OnTestFailedExpect
+        (
+            "Caught the wrong unknown exception",
+            aLocation
+        );
+
+        return;
+    }
+
+    // Caught no exception
+    GpUnitTestRunner::SRunnerByCurrentTask().OnTestFailedExpect
+    (
+        fmt::format
+        (
+            "No exception was caught; expected exception: '{}'",
+            typeid(T).name()
+        ),
+        aLocation
+    );
+}
+
+template<typename T>
+void    EXPECT_EXCEPTION
+(
+    std::function<void()>   aFn,
+    const SourceLocationT&  aLocation = SourceLocationT::current()
+)
+{
+    EXPECT_EXCEPTION<T>
+    (
+        aFn,
+        {},
+        aLocation
+    );
+}
+
+template<typename T>
+void    _ASSERT_EXCEPTION
+(
+    std::string_view                                    aExceptionName,
+    std::function<void()>                               aFn,
+    std::function<std::optional<std::string>(const T&)> aCheckExFn,
+    std::string_view                                    aFnAsSrcText,
+    const SourceLocationT&                              aLocation = SourceLocationT::current()
+)
+{
+    try
+    {
+        aFn();
+    } catch(const T& ex)
+    {
+        if (aCheckExFn)
+        {
+            std::optional<std::string> checkExRes = aCheckExFn(ex);
+
+            if (checkExRes.has_value())
+            {
+                throw GpUnitTestAssert
+                (
+                    fmt::format
+                    (
+                        "Failed to test the exception while calling '{}'. Error: {}",
+                        aFnAsSrcText,
+                        checkExRes.value()
+                    ),
+                    aLocation
+                );
+
+                return;
+            }
+        }
+
+        // OK
+        return;
+    } catch(...)
+    {
+        // Caught the wrong exception
+        throw GpUnitTestAssert
+        (
+            fmt::format
+            (
+                "Caught the wrong exception while calling '{}'. Expected exception '{}'",
+                aFnAsSrcText,
+                aExceptionName
+            ),
+            aLocation
+        );
+
+        return;
+    }
+
+    // Caught no exception
+    throw GpUnitTestAssert
+    (
+        fmt::format
+        (
+            "Caught no exception while calling '{}'. Expected exception '{}'",
+            aFnAsSrcText,
+            aExceptionName
+        ),
+        aLocation
+    );
+}
 
 }// namespace GPlatform::UnitTest

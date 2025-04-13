@@ -1,5 +1,5 @@
-#include "GpUnitTestAppCmdArgsDescFactory.hpp"
-#include "GpUnitTestAppCmdArgsDesc.hpp"
+#include <GpUnitTests/AppService/GpUnitTestAppCmdArgsDescFactory.hpp>
+#include <GpUnitTests/AppService/GpUnitTestAppCmdArgsDesc.hpp>
 
 namespace GPlatform::UnitTest {
 

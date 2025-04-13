@@ -1,7 +1,7 @@
 #pragma once
 
-#include "../GpUnitTests_globals.hpp"
-#include "GpUnitTestHandler.hpp"
+#include <GpUnitTests/GpUnitTests_globals.hpp>
+#include <GpUnitTests/Handlers/GpUnitTestHandler.hpp>
 
 namespace GPlatform::UnitTest {
 

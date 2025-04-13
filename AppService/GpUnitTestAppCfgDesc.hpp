@@ -1,7 +1,7 @@
 #pragma once
 
 #include <GpService/Config/GpServiceCfgBaseDesc.hpp>
-#include "../GpUnitTests_globals.hpp"
+#include <GpUnitTests/GpUnitTests_globals.hpp>
 
 namespace GPlatform::UnitTest {
 

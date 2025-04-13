@@ -2,11 +2,12 @@
 #include <GpLog/GpLogCore/GpLog.hpp>
 #include <GpCore2/GpTasks/Scheduler/GpTaskScheduler.hpp>
 #include <GpCore2/GpUtils/Exceptions/GpExceptionUtils.hpp>
-#include <GpCore2/GpTasks/ITC/GpItcSharedFutureUtils.hpp>
+#include <GpCore2/GpTasks/ITC/GpItcFutureUtils.hpp>
 #include <GpUnitTests/GpUnitTestManager.hpp>
 #include <GpUnitTests/GpUnitTestRunner.hpp>
 #include <GpUnitTests/Handlers/GpUnitTestLogOutHandlerFactory.hpp>
 #include <GpUnitTests/AppService/GpUnitTestAppCmdArgsDesc.hpp>
+#include <GpService/GpService.hpp>
 
 #include <numeric>
 
@@ -30,7 +31,7 @@ void    GpUnitTestManager::SetHandlerFactory (GpUnitTestHandlerFactory::SP aFact
 {
     GpUniqueLock<GpMutex> uniqueLock{iMutex};
 
-    THROW_COND_GP
+    VERIFY
     (
         iIsRun == false,
         "Failed to set handler factory. GpUnitTestManager RUN in progress..."_sv
@@ -68,16 +69,22 @@ void    GpUnitTestManager::RunAndWaitForDone (void)
     std::vector<GpUnitTestHandlerStatistics> statistics;
     std::atomic_bool isProduceDone = false;
 
-    SharedQueueT::SP        sharedQueue             = MakeSP<SharedQueueT>(size_t(300));
+    SharedQueueT::SP        sharedQueue             = MakeSP<SharedQueueT>(size_t{300});
     DoneFutureT::C::Vec::SP testRunnerDoneFutures   = StartRunners(sharedQueue, statistics, isProduceDone);
 
     ProduceTests(sharedQueue.V(), isProduceDone);
     WaitForRunners(testRunnerDoneFutures);
-    OnDone(statistics, managerHandler);
+
+    const bool isNoFailedTests = OnDone(statistics, managerHandler);
 
     {
         GpUniqueLock<GpMutex> uniqueLock{iMutex};
         iIsRun = false;
+    }
+
+    if (!isNoFailedTests)
+    {
+        GpService::SSetResultCode(EXIT_FAILURE);
     }
 }
 
@@ -86,13 +93,14 @@ void    GpUnitTestManager::AddGroupTest
     UnitTestSuiteGroupFactoryFnT    aUnitTestSuiteGroupFactoryFn,
     std::string_view                aUnitTestSuiteGroupTypeDemangleName,
     GpUnitTest::FnT                 aTestFn,
+    std::string                     aGroupName,
     std::string                     aTestName,
     std::string                     aTestCommment
 )
 {
     GpUniqueLock<GpMutex> uniqueLock{iMutex};
 
-    THROW_COND_GP
+    VERIFY
     (
         iIsRun == false,
         [&]()
@@ -112,7 +120,11 @@ void    GpUnitTestManager::AddGroupTest
         iter = iTestGroups.emplace
         (
             std::string(aUnitTestSuiteGroupTypeDemangleName),
-            MakeSP<GpUnitTestGroup>(aUnitTestSuiteGroupFactoryFn())
+            MakeSP<GpUnitTestGroup>
+            (
+                std::move(aGroupName),
+                aUnitTestSuiteGroupFactoryFn()
+            )
         ).first;
     }
 
@@ -154,9 +166,17 @@ GpUnitTestManager::DoneFutureT::C::Vec::SP  GpUnitTestManager::StartRunners
             aStatistics[id]
         );
 
+        auto donePromiseOptSP = GpTaskScheduler::S().NewToReadyDepend(std::move(testRunner));
+
+        VERIFY
+        (
+            donePromiseOptSP.has_value(),
+            "Failed to start TEST task"
+        );
+
         testRunnerDoneFutures.emplace_back
         (
-            GpTaskScheduler::S().NewToReadyDepend(std::move(testRunner))
+            std::move(donePromiseOptSP.value())
         );
     }
 
@@ -169,32 +189,55 @@ void    GpUnitTestManager::ProduceTests
     std::atomic_bool&   aIsProduceDoneRef
 ) NO_THREAD_SAFETY_ANALYSIS
 {
-    GpDoOnceInPeriod                onceInPeriod(553.0_si_ms, GpDoOnceInPeriod::Mode::AT_TIMEOUT);
-    std::atomic_size_t              runingGroupsCount = 0;
-    const GpUnitTestAppCmdArgsDesc& cmdArgsDesc = GpUnitTestAppCmdArgsDesc::SGet();
+    GpDoOnceInPeriod                onceInPeriod(253.0_si_ms, GpDoOnceInPeriod::Mode::AT_TIMEOUT);
+    std::atomic_size_t              runingGroupsCount   = 0;
+    const GpUnitTestAppCmdArgsDesc& cmdArgsDesc         = GpUnitTestAppCmdArgsDesc::SGet();
+    std::string_view                unitTestFilter      = cmdArgsDesc.unit_test_filter;
 
-    for (auto&[testGroupName, testGroupSP]: iTestGroups)
+    for (auto&[_, testGroupSP]: iTestGroups)
     {
-        if (testGroupSP->RunMode() == GpUnitTestGroupRunMode::RUN_EXCLUSIVE)
+        GpUnitTestGroup& testGroup = testGroupSP.Vn();
+
+        if (testGroup.RunMode() == GpUnitTestGroupRunMode::RUN_EXCLUSIVE)
         {
             // Wait for other groups done
             while (   (!aSharedQueue.Empty())
                    || (runingGroupsCount > 0))
             {
-                YELD_READY_TO_RUN();
+                YIELD_READY_TO_RUN();
             }
         }
 
-        const size_t testsCountAfterFilter = testGroupSP->FilterTests(cmdArgsDesc.filter);
-
-        if (testsCountAfterFilter > 0)
+        //  Filter out tests
+        bool isNeedToRunTestsGroup = true;
+        if (!unitTestFilter.empty())
         {
-            testGroupSP->SetRunCounterAndInc(runingGroupsCount);
+            std::regex  filterByNameRgex = StrOps::SPrepareRegexFilter(unitTestFilter);
+            std::smatch filterByNameRgexMatch;
+
+            isNeedToRunTestsGroup = false;
+
+            //  Filter out tests group
+            const std::string testGroupName{testGroup.Name()};
+            if (std::regex_match(testGroupName, filterByNameRgexMatch, filterByNameRgex))
+            {
+                isNeedToRunTestsGroup = true;
+            } else
+            {
+                // Filter out individual tests
+                const size_t testsCountAfterFilter = testGroup.FilterTests(unitTestFilter);
+                isNeedToRunTestsGroup = testsCountAfterFilter > 0;
+            }
+        }
+
+        if (isNeedToRunTestsGroup)
+        {
+            testGroup.SetRunCounterAndInc(runingGroupsCount);
 
             while (!aSharedQueue.PushAndNotifyAll(testGroupSP))
             {
                 LOG_INFO("UNIT TEST manager Produce/Consume queue is full, waiting..."_sv);
-                YELD_READY_TO_RUN();
+                YIELD_READY_TO_RUN();
             }
         }
 
@@ -202,7 +245,7 @@ void    GpUnitTestManager::ProduceTests
         (
             []()
             {
-                YELD_READY_TO_RUN();
+                YIELD_READY_TO_RUN();
             }
         );
     }
@@ -216,7 +259,7 @@ void    GpUnitTestManager::WaitForRunners (DoneFutureT::C::Vec::SP& aTestRunnerD
     {
         for (auto iter = std::begin(aTestRunnerDoneFutures); iter != std::end(aTestRunnerDoneFutures); )
         {
-            const bool isReady = GpItcSharedFutureUtils::STryCheck
+            const bool isReady = GpItcFutureUtils::STryCheck
             (
                 iter->V(),
                 [](typename GpTaskFiber::DoneFutureT::value_type& /*aRes*/)
@@ -232,7 +275,7 @@ void    GpUnitTestManager::WaitForRunners (DoneFutureT::C::Vec::SP& aTestRunnerD
                     );
 
                     LOG_ERROR(msg);
-                    THROW_GP(msg, aException.SourceLocation());
+                    THROW(msg, aException.SourceLocation());
                 }
             );
 
@@ -245,11 +288,11 @@ void    GpUnitTestManager::WaitForRunners (DoneFutureT::C::Vec::SP& aTestRunnerD
             }
         }
 
-        YELD_READY_TO_RUN();
+        YIELD_READY_TO_RUN();
     }
 }
 
-void    GpUnitTestManager::OnDone
+bool    GpUnitTestManager::OnDone
 (
     const std::vector<GpUnitTestHandlerStatistics>& aStatistics,
     GpUnitTestHandler&                              aManagerHandler
@@ -270,6 +313,8 @@ void    GpUnitTestManager::OnDone
     );
 
     aManagerHandler.OnManagerDone(resultStat);
+
+    return resultStat.IsNoFailed();
 }
 
 }// namespace GPlatform::UnitTest

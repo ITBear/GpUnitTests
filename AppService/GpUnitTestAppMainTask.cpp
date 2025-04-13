@@ -48,7 +48,7 @@ GpTaskRunRes::EnumT GpUnitTestAppMainTask::OnStep (void)
     return GpTaskRunRes::DONE;
 }
 
-void    GpUnitTestAppMainTask::OnStop (StopExceptionsT& aStopExceptionsOut) noexcept
+void    GpUnitTestAppMainTask::OnStop (ExceptionsT& aStopExceptionsOut) noexcept
 {
     try
     {

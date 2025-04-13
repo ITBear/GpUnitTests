@@ -16,7 +16,8 @@ public:
                                         GpUnitTestHandlerStatistics (const GpUnitTestHandlerStatistics& aStatistics) noexcept;
                                         GpUnitTestHandlerStatistics (GpUnitTestHandlerStatistics&& aStatistics) noexcept;
 
-    static std::string                  SToString                   (const GpUnitTestHandlerStatistics& aStatistics);
+    static std::string                  SToString                   (const GpUnitTestHandlerStatistics& aStatistics,
+                                                                     bool                               aIsTotal);
     static void                         SSetSumm                    (GpUnitTestHandlerStatistics&       aStatisticsAOut,
                                                                      const GpUnitTestHandlerStatistics& aStatisticsB);
     static GpUnitTestHandlerStatistics  SSumm                       (const GpUnitTestHandlerStatistics& aStatisticsA,
@@ -24,6 +25,9 @@ public:
 
     GpUnitTestHandlerStatistics&        operator=                   (const GpUnitTestHandlerStatistics& aStatistics) noexcept;
     GpUnitTestHandlerStatistics&        operator=                   (GpUnitTestHandlerStatistics&& aStatistics) noexcept;
+
+    bool                                IsNoFailed                  (void) const noexcept {return !IsAnyFailed();}
+    bool                                IsAnyFailed                 (void) const noexcept;
 
 public:
     mutable GpMutex     iMutex;

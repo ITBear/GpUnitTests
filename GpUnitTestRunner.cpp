@@ -31,7 +31,7 @@ GpUnitTestRunner&   GpUnitTestRunner::SRunnerByCurrentTask (void)
     GpTask& currentTask = GpTask::SCurrentTask().value().get();
     auto runnerOpt = currentTask.GetVarRef("_utr_");
 
-    THROW_COND_GP
+    VERIFY
     (
         runnerOpt.has_value(),
         "currentRunner is null"_sv
@@ -39,7 +39,7 @@ GpUnitTestRunner&   GpUnitTestRunner::SRunnerByCurrentTask (void)
 
     GpUnitTestRunner* runnerPtr = runnerOpt.value().get().Value<GpUnitTestRunner*>();
 
-    THROW_COND_GP
+    VERIFY
     (
         runnerPtr != nullptr,
         "currentRunner is null"_sv
@@ -73,7 +73,7 @@ void    GpUnitTestRunner::OnStart (void)
 GpTaskRunRes::EnumT GpUnitTestRunner::OnStep (void)
 {
     // Consume next GpUnitTestGroup
-    GpUnitTestGroup::C::Opt::SP testGroupOpt = iConsumerQueue->WaitAndPop(0.5_si_s);
+    GpUnitTestGroup::C::Opts::SP testGroupOpt = iConsumerQueue->WaitAndPop(0.5_si_s);
 
     if (!testGroupOpt.has_value())
     {
@@ -104,7 +104,7 @@ GpTaskRunRes::EnumT GpUnitTestRunner::OnStep (void)
     return GpTaskRunRes::READY_TO_RUN;
 }
 
-void    GpUnitTestRunner::OnStop (StopExceptionsT& aStopExceptionsOut) noexcept
+void    GpUnitTestRunner::OnStop (ExceptionsT& aStopExceptionsOut) noexcept
 {
     try
     {
