@@ -55,7 +55,7 @@ private:
 };
 
 GpUnitTestSuiteGroup::GpUnitTestSuiteGroup (std::string aName) noexcept:
-iName(std::move(aName))
+iName{std::move(aName)}
 {
 }
 
@@ -67,7 +67,7 @@ void    GpUnitTestSuiteGroup::BeforeTests
 {
     _BeforeTests();
 
-    //Call "before" hooks
+    // Call "before" hooks
     for (OnStartHookFnT& fn: iOnStartHooks)
     {
         if (fn)

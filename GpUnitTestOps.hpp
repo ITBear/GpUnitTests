@@ -382,9 +382,6 @@ void    _ASSERT_NOT_EQ
 //#define EXPECT_EXCEPTION(T, FN_TO_CALL)                    _EXPECT_EXCEPTION<T>(_MACRO_STRINGIFY_(T), FN_TO_CALL, {},          (_MACRO_STRINGIFY_(FN_TO_CALL)))
 //#define EXPECT_EXCEPTION_CHECK(T, FN_TO_CALL, FN_TO_CHECK) _EXPECT_EXCEPTION<T>(_MACRO_STRINGIFY_(T), FN_TO_CALL, FN_TO_CHECK, (_MACRO_STRINGIFY_(FN_TO_CALL)))
 
-#define ASSERT_EXCEPTION(T, FN_TO_CALL)                    _ASSERT_EXCEPTION<T>(_MACRO_STRINGIFY_(T), FN_TO_CALL, {},          (_MACRO_STRINGIFY_(FN_TO_CALL)))
-#define ASSERT_EXCEPTION_CHECK(T, FN_TO_CALL, FN_TO_CHECK) _ASSERT_EXCEPTION<T>(_MACRO_STRINGIFY_(T), FN_TO_CALL, FN_TO_CHECK, (_MACRO_STRINGIFY_(FN_TO_CALL)))
-
 template<typename T>
 void    EXPECT_EXCEPTION
 (
@@ -408,7 +405,7 @@ void    EXPECT_EXCEPTION
                 (
                     fmt::format
                     (
-                        "Failed to test the exception, error: {}.",
+                        "Failed to test the exception, error: {}",
                         checkExRes.value()
                     ),
                     aLocation
@@ -474,12 +471,10 @@ void    EXPECT_EXCEPTION
 }
 
 template<typename T>
-void    _ASSERT_EXCEPTION
+void    ASSERT_EXCEPTION
 (
-    std::string_view                                    aExceptionName,
     std::function<void()>                               aFn,
     std::function<std::optional<std::string>(const T&)> aCheckExFn,
-    std::string_view                                    aFnAsSrcText,
     const SourceLocationT&                              aLocation = SourceLocationT::current()
 )
 {
@@ -498,8 +493,7 @@ void    _ASSERT_EXCEPTION
                 (
                     fmt::format
                     (
-                        "Failed to test the exception while calling '{}'. Error: {}",
-                        aFnAsSrcText,
+                        "Failed to test the exception, error: {}",
                         checkExRes.value()
                     ),
                     aLocation
@@ -511,17 +505,26 @@ void    _ASSERT_EXCEPTION
 
         // OK
         return;
-    } catch(...)
+    } catch(const std::exception& e)
     {
         // Caught the wrong exception
         throw GpUnitTestAssert
         (
             fmt::format
             (
-                "Caught the wrong exception while calling '{}'. Expected exception '{}'",
-                aFnAsSrcText,
-                aExceptionName
+                "Caught the wrong exception. {}",
+                e.what()
             ),
+            aLocation
+        );
+
+        return;
+    } catch(...)
+    {
+        // Caught the wrong exception
+        throw GpUnitTestAssert
+        (
+            "Caught the wrong exception. {}",
             aLocation
         );
 
@@ -533,10 +536,24 @@ void    _ASSERT_EXCEPTION
     (
         fmt::format
         (
-            "Caught no exception while calling '{}'. Expected exception '{}'",
-            aFnAsSrcText,
-            aExceptionName
+            "No exception was caught; expected exception: '{}'",
+            typeid(T).name()
         ),
+        aLocation
+    );
+}
+
+template<typename T>
+void    ASSERT_EXCEPTION
+(
+    std::function<void()>   aFn,
+    const SourceLocationT&  aLocation = SourceLocationT::current()
+)
+{
+    ASSERT_EXCEPTION<T>
+    (
+        aFn,
+        {},
         aLocation
     );
 }

@@ -188,7 +188,7 @@ void    GpUnitTestLogOutHandler::OnTestFailedExpect
     std::string msg;
     msg.reserve(1024);
 
-    msg.append("[ FAILED ]: EXPECT Run test \""_sv).append(aTestSuitName).append(". "_sv).append(aTestName).append("\"... ("_sv)
+    msg.append("\033[31m[ FAILED ]\033[0m: EXPECT Run test \""_sv).append(aTestSuitName).append(". "_sv).append(aTestName).append("\"... ("_sv)
        .append(std::to_string(seconds_t(aTotalTime).Value())).append("s.)"_sv);
 
     msg.append("\n[        ]: REASON: ").append(aMsg);
@@ -214,7 +214,7 @@ void    GpUnitTestLogOutHandler::OnTestFailedAssert
     std::string msg;
     msg.reserve(1024);
 
-    msg.append("[ FAILED ]: ASSERT Run test \""_sv).append(aTestSuitName).append(". "_sv).append(aTestName).append("\"... ("_sv)
+    msg.append("\033[31m[ FAILED ]\033[0m: ASSERT Run test \""_sv).append(aTestSuitName).append(". "_sv).append(aTestName).append("\"... ("_sv)
        .append(std::to_string(seconds_t(aTotalTime).Value())).append("s.)"_sv);
 
     msg.append("\n[        ]: REASON: ").append(aMsg);
@@ -239,7 +239,7 @@ void    GpUnitTestLogOutHandler::OnTestException
     std::string msg;
     msg.reserve(512);
 
-    msg.append("[ FAILED ]: Run test \""_sv).append(aTestSuitName).append(". "_sv).append(aTestName).append("\"... ("_sv)
+    msg.append("\033[31m[ FAILED ]\033[0m: Run test \""_sv).append(aTestSuitName).append(". "_sv).append(aTestName).append("\"... ("_sv)
        .append(std::to_string(seconds_t(aTotalTime).Value())).append("s.)"_sv);
 
     msg.append("\n[        ]: REASON: exception was caught");
@@ -260,7 +260,7 @@ void    GpUnitTestLogOutHandler::OnTestUnknownException
     std::string msg;
     msg.reserve(512);
 
-    msg.append("[ FAILED ]: Run test \""_sv).append(aTestSuitName).append(". "_sv).append(aTestName).append("\"... ("_sv)
+    msg.append("\033[31m[ FAILED ]\033[0m: Run test \""_sv).append(aTestSuitName).append(". "_sv).append(aTestName).append("\"... ("_sv)
        .append(std::to_string(seconds_t(aTotalTime).Value())).append("s.)"_sv);
 
     msg.append("\n[        ]: REASON: UNKNOWN exception was caught");
