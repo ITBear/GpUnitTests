@@ -23,8 +23,6 @@ public:
     CLASS_REMOVE_CTRS_DEFAULT_MOVE_COPY(GpUnitTestGroup)
     CLASS_DD(GpUnitTestGroup)
 
-    using RuningGroupsCountT = std::optional<std::reference_wrapper<std::atomic_size_t>>;
-
 public:
                                     GpUnitTestGroup     (std::string                aName,
                                                          GpUnitTestSuiteGroup::SP   aSuite) noexcept;
@@ -36,8 +34,6 @@ public:
     std::string_view                Name                (void) const noexcept {return iName;}
     const GpUnitTest::C::Vec::SP&   Tests               (void) const noexcept {return iTests;}
     const GpUnitTestSuiteGroup::SP& Suite               (void) const noexcept {return iSuite;}
-    GpUnitTestGroupRunMode::EnumT   RunMode             (void) const noexcept {return iRunMode;}
-    void                            SetRunCounterAndInc (std::atomic_size_t& aRuningGroupsCountRef) noexcept;
     void                            AddTest             (GpUnitTest::SP aTest) {iTests.emplace_back(std::move(aTest));}
     size_t                          FilterTests         (std::string_view aFilter);
     GpUnitTestHandlerStatistics     Run                 (GpUnitTestHandler& aHandler);
@@ -47,15 +43,13 @@ private:
     bool                            StopSuite           (GpUnitTestHandler& aHandler);
 
 private:
-    const std::string               iName;
-    GpUnitTest::C::Vec::SP          iTests;
-    size_t                          iTestExpectFailsCnt = 0;
-    GpUnitTestHandler*              iCurrentHandler     = nullptr;
-    std::string                     iCurrentTestName;
-    microseconds_t                  iRunStartSTS;
-    GpUnitTestSuiteGroup::SP        iSuite;
-    GpUnitTestGroupRunMode::EnumT   iRunMode            = GpUnitTestGroupRunMode::RUN_EXCLUSIVE;
-    RuningGroupsCountT              iRuningGroupsCountOptRef;
+    const std::string           iName;
+    GpUnitTest::C::Vec::SP      iTests;
+    size_t                      iTestExpectFailsCnt = 0;
+    GpUnitTestHandler*          iCurrentHandler     = nullptr;
+    std::string                 iCurrentTestName;
+    microseconds_t              iRunStartSTS;
+    GpUnitTestSuiteGroup::SP    iSuite;
 };
 
 }// namespace GPlatform::UnitTest

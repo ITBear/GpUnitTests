@@ -3,7 +3,7 @@
 #include <GpUnitTests/Handlers/GpUnitTestHandler.hpp>
 
 #include <GpCore2/GpUtils/DateTime/GpDateTimeOps.hpp>
-#include <GpCore2/GpUtils/Other/GpRAIIonDestruct.hpp>
+#include <GpCore2/GpUtils/Other/GpDefer.hpp>
 #include <regex>
 
 namespace GPlatform::UnitTest {
@@ -44,12 +44,6 @@ void    GpUnitTestGroup::OnTestFailedExpect
     iTestExpectFailsCnt++;
 }
 
-void    GpUnitTestGroup::SetRunCounterAndInc (std::atomic_size_t& aRuningGroupsCountRef) noexcept
-{
-    iRuningGroupsCountOptRef = aRuningGroupsCountRef;
-    iRuningGroupsCountOptRef.value().get()++;
-}
-
 size_t  GpUnitTestGroup::FilterTests (std::string_view aFilter)
 {
     if (aFilter.empty())
@@ -78,22 +72,22 @@ size_t  GpUnitTestGroup::FilterTests (std::string_view aFilter)
 
 GpUnitTestHandlerStatistics GpUnitTestGroup::Run (GpUnitTestHandler& aHandler)
 {
-    iRunStartSTS    = GpDateTimeOps::SSteadyTS_us();
-    iCurrentHandler = &aHandler;
-    aHandler.OnTestGroupRunStart(*this);
-
     GpUnitTestHandlerStatistics statistics;
 
     statistics.startTs              = GpDateTimeOps::SUnixTS_ms();
     const microseconds_t startSTS   = GpDateTimeOps::SSteadyTS_us();
 
-    GpRAIIonDestruct onReturn = [&]()
+    GpDefer onReturn = [&]()
     {
         statistics.totalTime    = GpDateTimeOps::SSteadyTS_us() - startSTS;
         statistics.finishTs     = GpDateTimeOps::SUnixTS_ms();
 
         aHandler.OnTestGroupRunEnd(*this, statistics);
     };
+
+    iRunStartSTS    = GpDateTimeOps::SSteadyTS_us();
+    iCurrentHandler = &aHandler;
+    aHandler.OnTestGroupRunStart(*this);
 
     if (StartSuite(aHandler) == false)
     {
@@ -173,11 +167,6 @@ GpUnitTestHandlerStatistics GpUnitTestGroup::Run (GpUnitTestHandler& aHandler)
     if (StopSuite(aHandler) == false)
     {
         statistics.suiteStopFailedCount = 1;
-    }
-
-    if (iRuningGroupsCountOptRef.has_value())
-    {
-        iRuningGroupsCountOptRef.value().get()--;
     }
 
     return statistics;

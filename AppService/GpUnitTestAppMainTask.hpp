@@ -8,12 +8,11 @@ namespace GPlatform::UnitTest {
 class GP_UNIT_TESTS_API GpUnitTestAppMainTask final: public GpServiceMainTask
 {
 public:
-    CLASS_REMOVE_CTRS_DEFAULT_MOVE_COPY(GpUnitTestAppMainTask)
+    CLASS_REMOVE_CTRS_MOVE_COPY(GpUnitTestAppMainTask)
     CLASS_DD(GpUnitTestAppMainTask)
 
 public:
-                                GpUnitTestAppMainTask   (const GpServiceArgBaseDesc& aServiceArgsDesc,
-                                                         const GpServiceCfgBaseDesc& aServiceCfgDesc) noexcept;
+                                GpUnitTestAppMainTask   (void) noexcept;
     virtual                     ~GpUnitTestAppMainTask  (void) noexcept override final;
 
 protected:

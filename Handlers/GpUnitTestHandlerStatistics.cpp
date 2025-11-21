@@ -69,12 +69,13 @@ std::string GpUnitTestHandlerStatistics::SToString
     fmt::format_to
     (
         std::back_inserter(fmtOutBuffer),
-        "[========]: {}PASSED:     {}{}\n" \
+        "[========]: {}PASSED:     {}{} of {}\n" \
         "[========]: {}SKIPPED:    {}{}\n" \
         "[========]: {}DISABLED:   {}{}\n",
         totalPrefix,
         totalPostfix,
         std::to_string(localCopy.passedCount),
+        std::to_string(localCopy.passedCount + localCopy.skippedCount + localCopy.disabledCount + localCopy.failedCount),
         totalPrefix,
         totalPostfix,
         std::to_string(localCopy.skippedCount),
@@ -125,9 +126,6 @@ void    GpUnitTestHandlerStatistics::SSetSumm
     const GpUnitTestHandlerStatistics&  aStatisticsB
 )
 {
-    GpUniqueLock<GpMutex> uniqueLockA(aStatisticsAOut.iMutex);
-    GpUniqueLock<GpMutex> uniqueLockB(aStatisticsB.iMutex);
-
     aStatisticsAOut.suiteStartFailedCount   = aStatisticsAOut.suiteStartFailedCount + aStatisticsB.suiteStartFailedCount;
     aStatisticsAOut.suiteStopFailedCount    = aStatisticsAOut.suiteStopFailedCount  + aStatisticsB.suiteStopFailedCount;
     aStatisticsAOut.passedCount             = aStatisticsAOut.passedCount           + aStatisticsB.passedCount;
@@ -147,29 +145,21 @@ GpUnitTestHandlerStatistics GpUnitTestHandlerStatistics::SSumm
 {
     GpUnitTestHandlerStatistics res;
 
-    {
-        GpUniqueLock<GpMutex> uniqueLockA(aStatisticsA.iMutex);
-        GpUniqueLock<GpMutex> uniqueLockB(aStatisticsB.iMutex);
-
-        res.suiteStartFailedCount   = aStatisticsA.suiteStartFailedCount+ aStatisticsB.suiteStartFailedCount;
-        res.suiteStopFailedCount    = aStatisticsA.suiteStopFailedCount + aStatisticsB.suiteStopFailedCount;
-        res.passedCount             = aStatisticsA.passedCount          + aStatisticsB.passedCount;
-        res.failedCount             = aStatisticsA.failedCount          + aStatisticsB.failedCount;
-        res.skippedCount            = aStatisticsA.skippedCount         + aStatisticsB.skippedCount;
-        res.disabledCount           = aStatisticsA.disabledCount        + aStatisticsB.disabledCount;
-        res.startTs                 = unix_ts_ms_t::SMake(std::min(aStatisticsA.startTs.Value(), aStatisticsB.startTs.Value()));
-        res.finishTs                = unix_ts_ms_t::SMake(std::max(aStatisticsA.finishTs.Value(), aStatisticsB.finishTs.Value()));
-        res.totalTime               = aStatisticsA.totalTime            + aStatisticsB.totalTime;
-    }
+    res.suiteStartFailedCount   = aStatisticsA.suiteStartFailedCount+ aStatisticsB.suiteStartFailedCount;
+    res.suiteStopFailedCount    = aStatisticsA.suiteStopFailedCount + aStatisticsB.suiteStopFailedCount;
+    res.passedCount             = aStatisticsA.passedCount          + aStatisticsB.passedCount;
+    res.failedCount             = aStatisticsA.failedCount          + aStatisticsB.failedCount;
+    res.skippedCount            = aStatisticsA.skippedCount         + aStatisticsB.skippedCount;
+    res.disabledCount           = aStatisticsA.disabledCount        + aStatisticsB.disabledCount;
+    res.startTs                 = unix_ts_ms_t::SMake(std::min(aStatisticsA.startTs.Value(), aStatisticsB.startTs.Value()));
+    res.finishTs                = unix_ts_ms_t::SMake(std::max(aStatisticsA.finishTs.Value(), aStatisticsB.finishTs.Value()));
+    res.totalTime               = aStatisticsA.totalTime            + aStatisticsB.totalTime;
 
     return res;
 }
 
 GpUnitTestHandlerStatistics&    GpUnitTestHandlerStatistics::operator= (const GpUnitTestHandlerStatistics& aStatistics) noexcept
 {
-    GpUniqueLock<GpMutex> uniqueLockThis(iMutex);
-    GpUniqueLock<GpMutex> uniqueLockOther(aStatistics.iMutex);
-
     suiteStartFailedCount   = aStatistics.suiteStartFailedCount;
     suiteStopFailedCount    = aStatistics.suiteStopFailedCount;
     passedCount             = aStatistics.passedCount;
@@ -185,9 +175,6 @@ GpUnitTestHandlerStatistics&    GpUnitTestHandlerStatistics::operator= (const Gp
 
 GpUnitTestHandlerStatistics&    GpUnitTestHandlerStatistics::operator= (GpUnitTestHandlerStatistics&& aStatistics) noexcept
 {
-    GpUniqueLock<GpMutex> uniqueLockThis(iMutex);
-    GpUniqueLock<GpMutex> uniqueLockOther(aStatistics.iMutex);
-
     suiteStartFailedCount   = std::move(aStatistics.suiteStartFailedCount);
     suiteStopFailedCount    = std::move(aStatistics.suiteStopFailedCount);
     passedCount             = std::move(aStatistics.passedCount);

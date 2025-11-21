@@ -14,7 +14,7 @@ public:
                                     GpUnitTestHandlerFactory    (void) noexcept = default;
     virtual                         ~GpUnitTestHandlerFactory   (void) noexcept = default;
 
-    virtual GpUnitTestHandler::SP   NewInstance                 (void) noexcept = 0;
+    virtual GpUnitTestHandler::UP   NewInstance                 (void) noexcept = 0;
 };
 
 }// namespace GPlatform::UnitTest

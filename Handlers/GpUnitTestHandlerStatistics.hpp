@@ -4,13 +4,16 @@
 
 #include <GpCore2/GpUtils/Types/Units/Other/unix_ts_t.hpp>
 #include <GpCore2/GpUtils/Types/Units/SI/GpUnitsSI_Time.hpp>
-#include <GpCore2/GpUtils/SyncPrimitives/GpMutex.hpp>
+#include <GpCore2/GpUtils/SyncPrimitives/GpSyncPrimitives.hpp>
 #include <GpCore2/GpUtils/Types/Strings/GpStringOps.hpp>
 
 namespace GPlatform::UnitTest {
 
 class GP_UNIT_TESTS_API GpUnitTestHandlerStatistics
 {
+public:
+    CLASS_DD(GpUnitTestHandlerStatistics)
+
 public:
                                         GpUnitTestHandlerStatistics (void) noexcept = default;
                                         GpUnitTestHandlerStatistics (const GpUnitTestHandlerStatistics& aStatistics) noexcept;
@@ -30,8 +33,6 @@ public:
     bool                                IsAnyFailed                 (void) const noexcept;
 
 public:
-    mutable GpMutex     iMutex;
-
     size_t              suiteStartFailedCount   = 0;
     size_t              suiteStopFailedCount    = 0;
     size_t              passedCount             = 0;

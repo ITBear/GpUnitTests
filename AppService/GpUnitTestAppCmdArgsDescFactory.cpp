@@ -3,13 +3,13 @@
 
 namespace GPlatform::UnitTest {
 
-GpServiceArgBaseDescFactory::ResT   GpUnitTestAppCmdArgsDescFactory::NewInstance
+GpServiceArgBaseDesc::SP    GpUnitTestAppCmdArgsDescFactory::NewInstance
 (
     [[maybe_unused]] const size_t       aArgc,
     [[maybe_unused]] const char* const  aArgv[]
 ) const
 {
-    return {MakeSP<GpUnitTestAppCmdArgsDesc>(), false};
+    return MakeSP<GpUnitTestAppCmdArgsDesc>();
 }
 
 }// namespace GPlatform::UnitTest

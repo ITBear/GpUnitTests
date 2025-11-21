@@ -2,8 +2,9 @@
 
 #include <GpUnitTests/Handlers/GpUnitTestHandlerFactory.hpp>
 #include <GpUnitTests/GpUnitTestGroup.hpp>
-#include <GpCore2/GpTasks/ITC/GpItcQueue.hpp>
+#include <GpCore2/GpTasks/ITC/GpItcQueueMPMC.hpp>
 #include <GpCore2/GpTasks/Fibers/GpTaskFiber.hpp>
+#include <GpCore2/GpUtils/Types/Containers/GpSharedMap.hpp>
 
 namespace GPlatform::UnitTest {
 
@@ -13,33 +14,27 @@ public:
     CLASS_REMOVE_CTRS_DEFAULT_MOVE_COPY(GpUnitTestRunner)
     CLASS_DD(GpUnitTestRunner)
 
-    using SharedQueueT = GpItcQueue<GpUnitTestGroup::SP>;
+    using ExecQueueT = GpItcQueueMPMC<GpUnitTestGroup::SP>;
 
 public:
-                                    GpUnitTestRunner        (size_t                         aId,
-                                                             std::atomic_bool&              aIsProduceDone,
-                                                             SharedQueueT::SP               aConsumerQueue,
-                                                             GpUnitTestHandlerFactory::SP   aHandlerFactory,
-                                                             GpUnitTestHandlerStatistics&   aStatisticsOut);
-    virtual                         ~GpUnitTestRunner       (void) override final;
+                                GpUnitTestRunner        (size_t         aId,
+                                                         ExecQueueT::SP aExecQueueSP);
+    virtual                     ~GpUnitTestRunner       (void) override final;
 
-    static GpUnitTestRunner&        SRunnerByCurrentTask    (void);
-    void                            OnTestFailedExpect      (std::string_view       aMsg,
-                                                             const SourceLocationT& aLocation);
+    static GpUnitTestRunner::SP SRunnerByCurrentTask    (void);
+    void                        OnTestFailedExpect      (std::string_view       aMsg,
+                                                         const SourceLocationT& aLocation);
 
-    virtual void                    OnStart                 (void) override final;
-    virtual GpTaskRunRes::EnumT     OnStep                  (void) override final;
-    virtual void                    OnStop                  (ExceptionsT& aStopExceptionsOut) noexcept override final;
-    virtual void                    OnStopException         (const GpException &aException) noexcept override final;
+    virtual void                OnStart                 (void) override final;
+    virtual GpTaskRunRes::EnumT OnStep                  (void) override final;
+    virtual void                OnStop                  (ExceptionsT& aStopExceptionsOut) noexcept override final;
+    virtual void                OnStopException         (const GpException &aException) noexcept override final;
 
 private:
-    std::atomic_bool&               iIsProduceDoneRef;
-    SharedQueueT::SP                iConsumerQueue;
-    GpUnitTestHandlerFactory::SP    iHandlerFactory;
-    GpUnitTestGroup::SP             iCurrentUnitTestGroup;
-    GpUnitTestHandlerStatistics&    iStatisticsOut;
-
-    static std::vector<GpUnitTestRunner*>   sRunners;
+    ExecQueueT::SP              iExecQueueSP;
+    GpUnitTestHandler::UP       iHandlerUP;
+    GpUnitTestGroup::SP         iCurrentUnitTestGroupSP;
+    GpUnitTestHandlerStatistics iStatistics;
 };
 
 }// namespace GPlatform::UnitTest

@@ -1,7 +1,10 @@
 #include <GpUnitTests/GpUnitTestsLib.hpp>
+#include <GpCore2/GpUtils/Other/GpLinkedLibsInfo.hpp>
 
-namespace GPlatform {
+GP_STATIC_INITIALIZER_IMPL(GpUnitTests)
+GP_LIB_REGISTRATOR(GpUnitTestsLib)
 
-GP_IMPLEMENT_LIB_REGISTRATOR(GpUnitTestsLib)
-
-}// namespace GPlatform
+void    GpUnitTests_StaticInitializer::OnInitialize (void)
+{
+    GpUnitTestsLib::SRegisterSelf();
+}

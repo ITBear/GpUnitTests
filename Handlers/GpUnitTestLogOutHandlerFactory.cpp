@@ -3,9 +3,9 @@
 
 namespace GPlatform::UnitTest {
 
-GpSP<GpUnitTestHandler> GpUnitTestLogOutHandlerFactory::NewInstance (void) noexcept
+GpUnitTestHandler::UP   GpUnitTestLogOutHandlerFactory::NewInstance (void) noexcept
 {
-    return MakeSP<GpUnitTestLogOutHandler>();
+    return std::make_unique<GpUnitTestLogOutHandler>();
 }
 
 }// namespace GPlatform::UnitTest

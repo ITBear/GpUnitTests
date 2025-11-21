@@ -27,65 +27,79 @@ GpUnitTestManager&  GpUnitTestManager::S (void)
     return sInstance;
 }
 
-void    GpUnitTestManager::SetHandlerFactory (GpUnitTestHandlerFactory::SP aFactory)
+void    GpUnitTestManager::RunAndWaitForDone (void) noexcept
 {
-    GpUniqueLock<GpMutex> uniqueLock{iMutex};
+    GpDefer defer = [&]()
+    {
+        GpUniqueLock uniqueLock{iMutex};
+        iIsEnableToAdd = true;
+    };
 
-    VERIFY
+    {
+        GpUniqueLock uniqueLock{iMutex};
+        iIsEnableToAdd = false;
+    }
+
+    GpException exception;
+
+    try
+    {
+        GpUnitTestHandler::UP   managerHandlerUP    = GpUnitTestLogOutHandlerFactory{}.NewInstance();
+        GpUnitTestHandler&      managerHandler      = *managerHandlerUP;
+
+        managerHandler.OnManagerStart();
+
+        const size_t executorsCount = GpTaskScheduler::S().ExecutorsCount();
+        VERIFY
+        (
+            executorsCount >= 2,
+            "Executors count must be >= 2"
+        );
+
+        ExecQueueT::SP          execQueueSP             = MakeSP<ExecQueueT>(executorsCount - 1);
+        DoneFutureT::C::Vec::SP testRunnerDoneFutures   = StartRunners(execQueueSP);
+
+        VERIFY
+        (
+            !testRunnerDoneFutures.empty(),
+            "An error occurred while creating the test runners"
+        );
+
+        // Run tests
+        RunTests(execQueueSP);
+
+        execQueueSP->StopProduce();
+
+        // Wait for done
+        const GpUnitTestHandlerStatistics::C::Vec::Val statistics = WaitForRunners(testRunnerDoneFutures);
+
+        // Process results
+        const bool isNoFailedTests = OnDone(statistics, managerHandler);
+
+        if (!isNoFailedTests)
+        {
+            GpService::SSetResultCode(EXIT_FAILURE);
+        }
+
+        return;
+    } catch (const GpException& ex)
+    {
+        exception = ex;
+    } catch (const std::exception& ex)
+    {
+        exception = GpException{ex.what()};
+    } catch (...)
+    {
+        exception = GpException{"[GpUnitTestManager::OnStop]: unknown exception"_sv};
+    }
+
+    LOG_EXCEPTION
     (
-        iIsRun == false,
-        "Failed to set handler factory. GpUnitTestManager RUN in progress..."_sv
+        "[GpUnitTestManager::RunAndWaitForDone]",
+        exception
     );
 
-    iHandlerFactory = std::move(aFactory);
-}
-
-void    GpUnitTestManager::RunAndWaitForDone (void)
-{
-    GpUnitTestHandler::SP managerHandlerSP;
-
-    {
-        GpUniqueLock<GpMutex> uniqueLock{iMutex};
-
-        if (iIsRun) [[unlikely]]
-        {
-            return;
-        }
-
-        iIsRun = true;
-
-        if (iHandlerFactory.IsNULL())
-        {
-            iHandlerFactory = MakeSP<GpUnitTestLogOutHandlerFactory>();
-        }
-
-        managerHandlerSP = iHandlerFactory.V().NewInstance();
-    }   
-
-    GpUnitTestHandler& managerHandler = managerHandlerSP.V();
-
-    managerHandler.OnManagerStart();
-
-    std::vector<GpUnitTestHandlerStatistics> statistics;
-    std::atomic_bool isProduceDone = false;
-
-    SharedQueueT::SP        sharedQueue             = MakeSP<SharedQueueT>(size_t{300});
-    DoneFutureT::C::Vec::SP testRunnerDoneFutures   = StartRunners(sharedQueue, statistics, isProduceDone);
-
-    ProduceTests(sharedQueue.V(), isProduceDone);
-    WaitForRunners(testRunnerDoneFutures);
-
-    const bool isNoFailedTests = OnDone(statistics, managerHandler);
-
-    {
-        GpUniqueLock<GpMutex> uniqueLock{iMutex};
-        iIsRun = false;
-    }
-
-    if (!isNoFailedTests)
-    {
-        GpService::SSetResultCode(EXIT_FAILURE);
-    }
+    GpService::SSetResultCode(EXIT_FAILURE);
 }
 
 void    GpUnitTestManager::AddGroupTest
@@ -98,19 +112,12 @@ void    GpUnitTestManager::AddGroupTest
     std::string                     aTestCommment
 )
 {
-    GpUniqueLock<GpMutex> uniqueLock{iMutex};
+    GpUniqueLock uniqueLock{iMutex};
 
     VERIFY
     (
-        iIsRun == false,
-        [&]()
-        {
-            return fmt::format
-            (
-                "Failed to add unit test group '{}'. GpUnitTestManager RUN in progress...",
-                aUnitTestSuiteGroupTypeDemangleName
-            );
-        }
+        iIsEnableToAdd == true,
+        "iIsEnableToAdd == false"
     );
 
     auto iter = iTestGroups.find(aUnitTestSuiteGroupTypeDemangleName);
@@ -140,143 +147,164 @@ void    GpUnitTestManager::AddGroupTest
     );
 }
 
-GpUnitTestManager::DoneFutureT::C::Vec::SP  GpUnitTestManager::StartRunners
-(
-    SharedQueueT::SP&                           aSharedQueue,
-    std::vector<GpUnitTestHandlerStatistics>&   aStatistics,
-    std::atomic_bool&                           aIsProduceDoneRef
-) NO_THREAD_SAFETY_ANALYSIS
+GpUnitTestManager::DoneFutureT::C::Vec::SP  GpUnitTestManager::StartRunners (ExecQueueT::SP aExecQueueSP) noexcept
 {
-    DoneFutureT::C::Vec::SP testRunnerDoneFutures;
-    const size_t            executorsCount = GpTaskScheduler::S().ExecutorsCount();
+    GpException exception;
 
-    testRunnerDoneFutures.reserve(executorsCount);  
-    aStatistics.resize(executorsCount);
-
-    for (size_t id = 0; id < executorsCount; id++)
+    try
     {
-        GpUnitTestRunner::SP testRunner;
+        DoneFutureT::C::Vec::SP testRunnerDoneFutures;
+        const size_t            executorsCount = GpTaskScheduler::S().ExecutorsCount();
 
-        testRunner = MakeSP<GpUnitTestRunner>
-        (
-            id,
-            aIsProduceDoneRef,
-            aSharedQueue,
-            iHandlerFactory,
-            aStatistics[id]
-        );
+        testRunnerDoneFutures.reserve(executorsCount);
 
-        auto donePromiseOptSP = GpTaskScheduler::S().NewToReadyDepend(std::move(testRunner));
+        for (size_t id = 0; id < executorsCount; id++)
+        {
+            GpUnitTestRunner::SP testRunnerSP = MakeSP<GpUnitTestRunner>
+            (
+                id,
+                aExecQueueSP
+            );
 
-        VERIFY
-        (
-            donePromiseOptSP.has_value(),
-            "Failed to start TEST task"
-        );
+            testRunnerDoneFutures.emplace_back
+            (
+                testRunnerSP.Vn().DoneFuture()
+            );
 
-        testRunnerDoneFutures.emplace_back
-        (
-            std::move(donePromiseOptSP.value())
-        );
+            SPAWN_READY_TASK(testRunnerSP);
+        }
+
+        return testRunnerDoneFutures;
+    } catch (const GpException& ex)
+    {
+        exception = ex;
+    } catch (const std::exception& ex)
+    {
+        exception = GpException{ex.what()};
+    } catch (...)
+    {
+        exception = GpException{"[GpUnitTestManager::OnStop]: unknown exception"_sv};
     }
 
-    return testRunnerDoneFutures;
+    LOG_EXCEPTION
+    (
+        "[GpUnitTestManager::StartRunners]",
+        exception
+    );
+
+    return {};
 }
 
-void    GpUnitTestManager::ProduceTests
-(
-    SharedQueueT&       aSharedQueue,
-    std::atomic_bool&   aIsProduceDoneRef
-) NO_THREAD_SAFETY_ANALYSIS
+void    GpUnitTestManager::RunTests (ExecQueueT::SP aExecQueueSP) noexcept
 {
-    GpDoOnceInPeriod                onceInPeriod(253.0_si_ms, GpDoOnceInPeriod::Mode::AT_TIMEOUT);
-    std::atomic_size_t              runingGroupsCount   = 0;
-    const GpUnitTestAppCmdArgsDesc& cmdArgsDesc         = GpUnitTestAppCmdArgsDesc::SGet();
-    std::string_view                unitTestFilter      = cmdArgsDesc.unit_test_filter;
+    GpException exception;
 
-    for (auto&[_, testGroupSP]: iTestGroups)
+    try
     {
-        GpUnitTestGroup& testGroup = testGroupSP.Vn();
-
-        if (testGroup.RunMode() == GpUnitTestGroupRunMode::RUN_EXCLUSIVE)
+        GpUnitTestGroup::C::MapStr::SP  testGroups;
         {
-            // Wait for other groups done
-            while (   (!aSharedQueue.Empty())
-                   || (runingGroupsCount > 0))
-            {
-                YIELD_READY_TO_RUN();
-            }
+            GpUniqueLock uniqueLock{iMutex};
+            testGroups = std::move(iTestGroups);
         }
 
-        //  Filter out tests
-        bool isNeedToRunTestsGroup = true;
-        if (!unitTestFilter.empty())
+        ExecQueueT& execQueue = aExecQueueSP.V();
+
+        //std::atomic_size_t            runingGroupsCount   = 0;
+        const GpUnitTestAppCmdArgsDesc& cmdArgsDesc         = GpService::SArgs().CastTo<GpUnitTestAppCmdArgsDesc::CSP>().V();
+        std::string_view                unitTestFilter      = cmdArgsDesc.unit_test_filter;
+
+        for (auto&[_, testGroupSP]: testGroups)
         {
-            std::regex  filterByNameRgex = StrOps::SPrepareRegexFilter(unitTestFilter);
-            std::smatch filterByNameRgexMatch;
+            GpUnitTestGroup& testGroup = testGroupSP.Vn();
 
-            isNeedToRunTestsGroup = false;
+            // Filter out tests
+            bool skipTest = false;
+            if (!unitTestFilter.empty())
+            {
+                std::regex  filterByNameRgex = StrOps::SPrepareRegexFilter(unitTestFilter);
+                std::smatch filterByNameRgexMatch;
 
-            //  Filter out tests group
-            const std::string testGroupName{testGroup.Name()};
-            if (std::regex_match(testGroupName, filterByNameRgexMatch, filterByNameRgex))
+                //  Filter out tests group
+                const std::string testGroupName{testGroup.Name()};
+                if (std::regex_match(testGroupName, filterByNameRgexMatch, filterByNameRgex))
+                {
+                    skipTest = false;
+                } else
+                {
+                    // Filter out individual tests
+                    const size_t testsCountAfterFilter = testGroup.FilterTests(unitTestFilter);
+                    skipTest = testsCountAfterFilter == 0;
+                }
+            }
+
+            if (skipTest) [[unlikely]]
             {
-                isNeedToRunTestsGroup = true;
-            } else
+                continue;
+            }
+
+            while (true)
             {
-                // Filter out individual tests
-                const size_t testsCountAfterFilter = testGroup.FilterTests(unitTestFilter);
-                isNeedToRunTestsGroup = testsCountAfterFilter > 0;
+                const auto flags = execQueue.PushWaitFor(testGroupSP, 250.0_si_ms);
+
+                if (flags == 0) [[likely]]
+                {
+                    break;
+                } else if (flags & (ExecQueueT::FlagsT(ExecQueueT::FlagE::INTERRUPT) | ExecQueueT::FlagsT(ExecQueueT::FlagE::STOP_PRODUCE)))
+                {
+                    return;
+                }
             }
         }
-
-        if (isNeedToRunTestsGroup)
-        {
-            testGroup.SetRunCounterAndInc(runingGroupsCount);
-
-            while (!aSharedQueue.PushAndNotifyAll(testGroupSP))
-            {
-                LOG_INFO("UNIT TEST manager Produce/Consume queue is full, waiting..."_sv);
-                YIELD_READY_TO_RUN();
-            }
-        }
-
-        onceInPeriod.Do
-        (
-            []()
-            {
-                YIELD_READY_TO_RUN();
-            }
-        );
+    } catch (const GpException& ex)
+    {
+        exception = ex;
+    } catch (const std::exception& ex)
+    {
+        exception = GpException{ex.what()};
+    } catch (...)
+    {
+        exception = GpException{"[GpUnitTestManager::RunTests]: unknown exception"_sv};
     }
 
-    aIsProduceDoneRef.store(true, std::memory_order_release);
+    LOG_EXCEPTION
+    (
+        "[GpUnitTestManager::StartRunners]",
+        exception
+    );
 }
 
-void    GpUnitTestManager::WaitForRunners (DoneFutureT::C::Vec::SP& aTestRunnerDoneFutures)
+GpUnitTestHandlerStatistics::C::Vec::Val    GpUnitTestManager::WaitForRunners (DoneFutureT::C::Vec::SP& aTestRunnerDoneFutures)
 {
+    static const auto onExceptionFn = [](const GpException& aException)
+    {
+        const std::string msg = fmt::format
+        (
+            "[GpUnitTestManager::WaitForRunners]: Unit Test Runner finished with error: {}",
+            aException.what()
+        );
+
+        LOG_ERROR(msg);
+    };
+
+    GpUnitTestHandlerStatistics::C::Vec::Val statistics;
+
     while (!aTestRunnerDoneFutures.empty())
     {
-        for (auto iter = std::begin(aTestRunnerDoneFutures); iter != std::end(aTestRunnerDoneFutures); )
+        for (auto iter = std::begin(aTestRunnerDoneFutures); iter != std::end(aTestRunnerDoneFutures); /*iter++*/)
         {
-            const bool isReady = GpItcFutureUtils::STryCheck
-            (
-                iter->V(),
-                [](typename GpTaskFiber::DoneFutureT::value_type& /*aRes*/)
-                {
-                    LOG_INFO("[GpUnitTestManager::WaitForRunners]: done"_sv);
-                },
-                [](const GpException& aException)
-                {
-                    const std::string msg = fmt::format
-                    (
-                        "[GpUnitTestManager::WaitForRunners]: Unit Test Runner finished with error: {}",
-                        aException.what()
-                    );
+            auto& doneFuture = iter->V();
 
-                    LOG_ERROR(msg);
-                    THROW(msg, aException.SourceLocation());
-                }
+            const bool isReady = GpItcFutureUtils::SWaitFor
+            (
+                doneFuture,
+                [&](typename GpTaskFiber::DoneFutureT::value_type&& aResult)
+                {
+                    auto stat = aResult.ValueMove().Value<GpUnitTestHandlerStatistics>();
+                    statistics.emplace_back(stat);
+                },
+                onExceptionFn,
+                250.0_si_ms,
+                nullptr
             );
 
             if (isReady)
@@ -287,14 +315,16 @@ void    GpUnitTestManager::WaitForRunners (DoneFutureT::C::Vec::SP& aTestRunnerD
                 iter++;
             }
         }
-
-        YIELD_READY_TO_RUN();
     }
+
+    LOG_INFO("[GpUnitTestManager::WaitForRunners]: All tests have finished"_sv);
+
+    return statistics;
 }
 
 bool    GpUnitTestManager::OnDone
 (
-    const std::vector<GpUnitTestHandlerStatistics>& aStatistics,
+    const GpUnitTestHandlerStatistics::C::Vec::Val& aStatistics,
     GpUnitTestHandler&                              aManagerHandler
 )
 {
@@ -309,7 +339,7 @@ bool    GpUnitTestManager::OnDone
         [](const GpUnitTestHandlerStatistics& a, const GpUnitTestHandlerStatistics& b)
         {
             return GpUnitTestHandlerStatistics::SSumm(a, b);
-        }       
+        }
     );
 
     aManagerHandler.OnManagerDone(resultStat);

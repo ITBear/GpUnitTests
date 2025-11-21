@@ -1,10 +1,6 @@
 #pragma once
 
 #include <GpUnitTests/GpUnitTests_globals.hpp>
-#include <GpCore2/GpUtils/Other/GpLinkedLibsInfo.hpp>
+#include <GpCore2/GpUtils/Other/GpStaticInitializer.hpp>
 
-namespace GPlatform {
-
-GP_DECLARE_LIB_REGISTRATOR(GpUnitTestsLib)
-
-}// namespace GPlatform
+GP_STATIC_INITIALIZER(GP_UNIT_TESTS_API, GpUnitTests)

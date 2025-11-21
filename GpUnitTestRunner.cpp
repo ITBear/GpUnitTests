@@ -1,24 +1,17 @@
 #include <GpUnitTests/GpUnitTestRunner.hpp>
 #include <GpUnitTests/GpUnitTestGroup.hpp>
 #include <GpLog/GpLogCore/GpLog.hpp>
+#include <GpUnitTests/Handlers/GpUnitTestLogOutHandlerFactory.hpp>
 
 namespace GPlatform::UnitTest {
 
-std::vector<GpUnitTestRunner*>  GpUnitTestRunner::sRunners;
-
 GpUnitTestRunner::GpUnitTestRunner
 (
-    const size_t                    aId,
-    std::atomic_bool&               aIsProduceDone,
-    SharedQueueT::SP                aConsumerQueue,
-    GpUnitTestHandlerFactory::SP    aHandlerFactory,
-    GpUnitTestHandlerStatistics&    aStatisticsOut
+    const size_t    aId,
+    ExecQueueT::SP  aExecQueueSP
 ):
 GpTaskFiber{"Unit test runner["_sv + aId + "]"_sv},
-iIsProduceDoneRef{aIsProduceDone},
-iConsumerQueue   {std::move(aConsumerQueue)},
-iHandlerFactory  {std::move(aHandlerFactory)},
-iStatisticsOut   {aStatisticsOut}
+iExecQueueSP{std::move(aExecQueueSP)}
 {
 }
 
@@ -26,26 +19,18 @@ GpUnitTestRunner::~GpUnitTestRunner (void)
 {
 }
 
-GpUnitTestRunner&   GpUnitTestRunner::SRunnerByCurrentTask (void)
+GpUnitTestRunner::SP    GpUnitTestRunner::SRunnerByCurrentTask (void)
 {
-    GpTask& currentTask = GpTask::SCurrentTask().value().get();
-    auto runnerOpt = currentTask.GetVarRef("_utr_");
+    GpTask::WP taskWP = GpTask::SCurrentTask();
+    GpTask::SP taskSP = taskWP.Lock();
 
     VERIFY
     (
-        runnerOpt.has_value(),
+        taskSP.IsNotNULL(),
         "currentRunner is null"_sv
     );
 
-    GpUnitTestRunner* runnerPtr = runnerOpt.value().get().Value<GpUnitTestRunner*>();
-
-    VERIFY
-    (
-        runnerPtr != nullptr,
-        "currentRunner is null"_sv
-    );
-
-    return *runnerPtr;
+    return taskSP.CastTo<GpUnitTestRunner::SP>();
 }
 
 void    GpUnitTestRunner::OnTestFailedExpect
@@ -54,54 +39,46 @@ void    GpUnitTestRunner::OnTestFailedExpect
     const SourceLocationT&  aLocation
 )
 {
-    iCurrentUnitTestGroup.V().OnTestFailedExpect(aMsg, aLocation);
+    iCurrentUnitTestGroupSP.V().OnTestFailedExpect(aMsg, aLocation);
 }
 
 void    GpUnitTestRunner::OnStart (void)
 {
-    // Save current task to _utr_ var
-    GpTask& currentTask = GpTask::SCurrentTask().value().get();
-    currentTask.SetVar("_utr_", this);
+    iStatistics.startTs = GpDateTimeOps::SUnixTS_ms();
 
-    //
-    iStatisticsOut.startTs = GpDateTimeOps::SUnixTS_ms();
+    // TODO: move to test setup or config
+    iHandlerUP = GpUnitTestLogOutHandlerFactory{}.NewInstance();
 
-    //
-    LOG_INFO(TaskName() + ": START..."_sv);
+    LOG_INFO(TaskName() + ": start..."_sv);
 }
 
 GpTaskRunRes::EnumT GpUnitTestRunner::OnStep (void)
 {
-    // Consume next GpUnitTestGroup
-    GpUnitTestGroup::C::Opts::SP testGroupOpt = iConsumerQueue->WaitAndPop(0.5_si_s);
+    ExecQueueT& queue = iExecQueueSP.V();
 
-    if (!testGroupOpt.has_value())
+    while(!IsStopRequested())
     {
-        if (iIsProduceDoneRef)
+        auto                            popRes          = queue.PopWaitFor(100.0_si_ms);
+        GpUnitTestGroup::C::Opts::SP    testGroupOpt    = std::move(popRes.iValue);
+
+        if (testGroupOpt.has_value() == false)
         {
-            return GpTaskRunRes::DONE;
-        } else
-        {
-            return GpTaskRunRes::READY_TO_RUN;
+            if (popRes.iFlags & (ExecQueueT::FlagsT(ExecQueueT::FlagE::INTERRUPT) | ExecQueueT::FlagsT(ExecQueueT::FlagE::STOP_PRODUCE)))
+            {
+                break;
+            }
+
+            continue;
         }
+
+        // Extract result
+        iCurrentUnitTestGroupSP = std::move(testGroupOpt.value());
+
+        const GpUnitTestHandlerStatistics runStat = iCurrentUnitTestGroupSP.V().Run(*iHandlerUP);
+        GpUnitTestHandlerStatistics::SSetSumm(iStatistics, runStat);
     }
 
-    // Extract result
-    GpUnitTestGroup::SP unitTestGroupSP = testGroupOpt.value();
-
-    // Do
-    if (unitTestGroupSP.IsNotNULL())
-    {
-        iCurrentUnitTestGroup = unitTestGroupSP;
-
-        GpUnitTestHandler::SP               handler = iHandlerFactory.V().NewInstance();
-        const GpUnitTestHandlerStatistics   runStat = iCurrentUnitTestGroup.V().Run(handler.V());
-
-        GpUnitTestHandlerStatistics::SSetSumm(iStatisticsOut, runStat);
-        iCurrentUnitTestGroup.Clear();
-    }
-
-    return GpTaskRunRes::READY_TO_RUN;
+    return GpTaskRunRes::DONE;
 }
 
 void    GpUnitTestRunner::OnStop (ExceptionsT& aStopExceptionsOut) noexcept
@@ -112,10 +89,12 @@ void    GpUnitTestRunner::OnStop (ExceptionsT& aStopExceptionsOut) noexcept
         (
             fmt::format
             (
-                "[GpUnitTestRunner::OnStop]: {}",
+                "[GpUnitTestRunner::OnStop]: Name: '{}'",
                 TaskName()
             )
         );
+
+        DonePromise(GpMethodAccess{this}).Fulfill(GpAny{iStatistics});
     } catch (const GpException& ex)
     {
         aStopExceptionsOut.emplace_back(ex);

@@ -15,8 +15,7 @@ public:
                                    GpUnitTestAppMainTaskFactory     (void) noexcept;
    virtual                          ~GpUnitTestAppMainTaskFactory   (void) noexcept override final;
 
-   virtual GpServiceMainTask::SP    NewInstance                     (const GpServiceArgBaseDesc& aServiceArgsDesc,
-                                                                     const GpServiceCfgBaseDesc& aServiceCfgDesc) const override final;
+   virtual GpServiceMainTask::SP    NewInstance                     (void) const override final;
 };
 
 }// namespace GPlatform::UnitTest

@@ -31,14 +31,9 @@ void    GpUnitTestLogOutHandler::OnManagerDone (const GpUnitTestHandlerStatistic
     msg.reserve(1024);
 
 #if defined(GP_OS_WINDOWS)
-    if (aStatistics.failedCount == 0)
+    if (aStatistics.IsNoFailed())
     {
         msg.append("\n");
-        msg.append("             |||||   ||||||  |||    || |||||||      |||||  ||      ||          |||||||| ||||||| ||||||| ||||||||\n"_sv);
-        msg.append("            ||   || ||    || ||||   || ||          ||   || ||      ||             ||    ||      ||         ||   \n"_sv);
-        msg.append("            ||   || ||    || || ||  || |||||       ||||||| ||      ||             ||    |||||   |||||||    ||   \n"_sv);
-        msg.append("            ||   || ||    || ||  || || ||          ||   || ||      ||             ||    ||           ||    ||   \n"_sv);
-        msg.append("            ||||||   ||||||  ||   |||| |||||||     ||   || ||||||| |||||||        ||    ||||||| |||||||    ||   \n"_sv);
         msg.append("\033[32m                                                                                                        \n"_sv);
         msg.append("            ||||||| ||    ||  ||||||  |||||| ||||||| ||||||| ||||||| ||||||| ||    || ||      ||      ||    ||  \n"_sv);
         msg.append("            ||      ||    || ||      ||      ||      ||      ||      ||      ||    || ||      ||       ||  ||   \n"_sv);
@@ -49,11 +44,6 @@ void    GpUnitTestLogOutHandler::OnManagerDone (const GpUnitTestHandlerStatistic
     } else
     {
         msg.append("\n");
-        msg.append("               |||||    ||||||  |||    || |||||||      |||||  ||      ||          |||||||| ||||||| ||||||| ||||||||            \n"_sv);
-        msg.append("               ||   || ||    || ||||   || ||          ||   || ||      ||             ||    ||      ||         ||               \n"_sv);
-        msg.append("               ||   || ||    || || ||  || |||||       ||||||| ||      ||             ||    |||||   |||||||    ||               \n"_sv);
-        msg.append("               ||   || ||    || ||  || || ||          ||   || ||      ||             ||    ||           ||    ||               \n"_sv);
-        msg.append("               ||||||   ||||||  ||   |||| |||||||     ||   || ||||||| |||||||        ||    ||||||| |||||||    ||               \n"_sv);
         msg.append("\033[31m                                                                                                                       \n"_sv);
         msg.append("      |||||||| ||   || ||||||| ||||||  |||||||      |||||  ||||||  |||||||     ||||||| ||||||  ||||||   ||||||  ||||||  |||||||\n"_sv);
         msg.append("         ||    ||   || ||      ||   || ||          ||   || ||   || ||          ||      ||   || ||   || ||    || ||   || ||     \n"_sv);
@@ -63,14 +53,9 @@ void    GpUnitTestLogOutHandler::OnManagerDone (const GpUnitTestHandlerStatistic
         msg.append("\033[0m\n\n");
     }
 #else
-    if (aStatistics.failedCount == 0)
+    if (aStatistics.IsNoFailed())
     {
         msg.append("\n");
-        msg.append("            ██████   ██████  ███    ██ ███████      █████  ██      ██          ████████ ███████ ███████ ████████\n"_sv);
-        msg.append("            ██   ██ ██    ██ ████   ██ ██          ██   ██ ██      ██             ██    ██      ██         ██   \n"_sv);
-        msg.append("            ██   ██ ██    ██ ██ ██  ██ █████       ███████ ██      ██             ██    █████   ███████    ██   \n"_sv);
-        msg.append("            ██   ██ ██    ██ ██  ██ ██ ██          ██   ██ ██      ██             ██    ██           ██    ██   \n"_sv);
-        msg.append("            ██████   ██████  ██   ████ ███████     ██   ██ ███████ ███████        ██    ███████ ███████    ██   \n"_sv);
         msg.append("\033[32m                                                                                                        \n"_sv);
         msg.append("            ███████ ██    ██  ██████  ██████ ███████ ███████ ███████ ███████ ██    ██ ██      ██      ██    ██  \n"_sv);
         msg.append("            ██      ██    ██ ██      ██      ██      ██      ██      ██      ██    ██ ██      ██       ██  ██   \n"_sv);
@@ -81,11 +66,6 @@ void    GpUnitTestLogOutHandler::OnManagerDone (const GpUnitTestHandlerStatistic
     } else
     {
         msg.append("\n");
-        msg.append("               █████    ██████  ███    ██ ███████      █████  ██      ██          ████████ ███████ ███████ ████████            \n"_sv);
-        msg.append("               ██   ██ ██    ██ ████   ██ ██          ██   ██ ██      ██             ██    ██      ██         ██               \n"_sv);
-        msg.append("               ██   ██ ██    ██ ██ ██  ██ █████       ███████ ██      ██             ██    █████   ███████    ██               \n"_sv);
-        msg.append("               ██   ██ ██    ██ ██  ██ ██ ██          ██   ██ ██      ██             ██    ██           ██    ██               \n"_sv);
-        msg.append("               ██████   ██████  ██   ████ ███████     ██   ██ ███████ ███████        ██    ███████ ███████    ██               \n"_sv);
         msg.append("\033[31m                                                                                                                       \n"_sv);
         msg.append("      ████████ ██   ██ ███████ ██████  ███████      █████  ██████  ███████     ███████ ██████  ██████   ██████  ██████  ███████\n"_sv);
         msg.append("         ██    ██   ██ ██      ██   ██ ██          ██   ██ ██   ██ ██          ██      ██   ██ ██   ██ ██    ██ ██   ██ ██     \n"_sv);

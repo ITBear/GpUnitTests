@@ -12,42 +12,42 @@ public:
     CLASS_DD(GpUnitTestLogOutHandler)
 
 public:
-                        GpUnitTestLogOutHandler     (void);
-                        GpUnitTestLogOutHandler     (GpUnitTestHandler::SP aSublayerHandler);
-    virtual             ~GpUnitTestLogOutHandler    (void) noexcept override final;
+                    GpUnitTestLogOutHandler     (void);
+                    GpUnitTestLogOutHandler     (GpUnitTestHandler::SP aSublayerHandler);
+    virtual         ~GpUnitTestLogOutHandler    (void) noexcept override final;
 
-    virtual void        OnManagerStart              (void) override;
-    virtual void        OnManagerDone               (const GpUnitTestHandlerStatistics& aStatistics) override;
+    virtual void    OnManagerStart              (void) override;
+    virtual void    OnManagerDone               (const GpUnitTestHandlerStatistics& aStatistics) override;
 
-    virtual void        OnTestGroupRunStart         (const GpUnitTestGroup& aUnitTestGroup) override final;
-    virtual void        OnTestGroupRunEnd           (const GpUnitTestGroup&             aUnitTestGroup,
-                                                     const GpUnitTestHandlerStatistics& aStatistics) override final;
+    virtual void    OnTestGroupRunStart         (const GpUnitTestGroup& aUnitTestGroup) override final;
+    virtual void    OnTestGroupRunEnd           (const GpUnitTestGroup&             aUnitTestGroup,
+                                                 const GpUnitTestHandlerStatistics& aStatistics) override final;
 
-    virtual void        OnTestStart                 (std::string_view   aTestGroupName,
-                                                     std::string_view   aTestName) override final;
-    virtual void        OnTestPass                  (std::string_view   aTestGroupName,
-                                                     std::string_view   aTestName,
-                                                     microseconds_t     aTotalTime) override final;
-    virtual void        OnTestFailedExpect          (std::string_view       aTestGroupName,
-                                                     std::string_view       aTestName,
-                                                     std::string_view       aMsg,
-                                                     const SourceLocationT& aLocation,
-                                                     microseconds_t         aTotalTime) override;
-    virtual void        OnTestFailedAssert          (std::string_view       aTestGroupName,
-                                                     std::string_view       aTestName,
-                                                     std::string_view       aMsg,
-                                                     const SourceLocationT& aLocation,
-                                                     microseconds_t         aTotalTime) override;
-    virtual void        OnTestException             (std::string_view       aTestGroupName,
-                                                     std::string_view       aTestName,
-                                                     const std::exception&  aEx,
-                                                     microseconds_t         aTotalTime) override final;
-    virtual void        OnTestUnknownException      (std::string_view   aTestGroupName,
-                                                     std::string_view   aTestName,
-                                                     microseconds_t     aTotalTime) override final;
+    virtual void    OnTestStart                 (std::string_view   aTestGroupName,
+                                                 std::string_view   aTestName) override final;
+    virtual void    OnTestPass                  (std::string_view   aTestGroupName,
+                                                 std::string_view   aTestName,
+                                                 microseconds_t     aTotalTime) override final;
+    virtual void    OnTestFailedExpect          (std::string_view       aTestGroupName,
+                                                 std::string_view       aTestName,
+                                                 std::string_view       aMsg,
+                                                 const SourceLocationT& aLocation,
+                                                 microseconds_t         aTotalTime) override;
+    virtual void    OnTestFailedAssert          (std::string_view       aTestGroupName,
+                                                 std::string_view       aTestName,
+                                                 std::string_view       aMsg,
+                                                 const SourceLocationT& aLocation,
+                                                 microseconds_t         aTotalTime) override;
+    virtual void    OnTestException             (std::string_view       aTestGroupName,
+                                                 std::string_view       aTestName,
+                                                 const std::exception&  aEx,
+                                                 microseconds_t         aTotalTime) override final;
+    virtual void    OnTestUnknownException      (std::string_view   aTestGroupName,
+                                                 std::string_view   aTestName,
+                                                 microseconds_t     aTotalTime) override final;
 
 private:
-    const GpUUID        iGuid;
+    const GpUUID    iGuid;
 };
 
 }// namespace GPlatform::UnitTest

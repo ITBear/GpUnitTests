@@ -4,7 +4,7 @@
 #include <GpUnitTests/GpUnitTestSuiteGroup.hpp>
 #include <GpUnitTests/Handlers/GpUnitTestHandlerFactory.hpp>
 #include <GpCore2/GpTasks/ITC/GpItcFuture.hpp>
-#include <GpCore2/GpTasks/ITC/GpItcQueue.hpp>
+#include <GpCore2/GpTasks/ITC/GpItcQueueMPMC.hpp>
 #include <GpCore2/GpTasks/GpTask.hpp>
 
 namespace GPlatform::UnitTest {
@@ -18,47 +18,43 @@ class GP_UNIT_TESTS_API GpUnitTestManager
     TAG_SET(THREAD_SAFE)
 
     using DoneFutureT                   = GpTask::DoneFutureT;
-    using SharedQueueT                  = GpItcQueue<GpUnitTestGroup::SP>;
+    using ExecQueueT                    = GpItcQueueMPMC<GpUnitTestGroup::SP>;
     using UnitTestSuiteGroupFactoryFnT  = std::function<GpUnitTestSuiteGroup::SP()>;
 
 private:
-                                    GpUnitTestManager   (void) noexcept;
+                                GpUnitTestManager   (void) noexcept;
 
 public:
-                                    ~GpUnitTestManager  (void) noexcept;
+                                ~GpUnitTestManager  (void) noexcept;
 
-    static GpUnitTestManager&       S                   (void);
+    static GpUnitTestManager&   S                   (void);
 
-    void                            SetHandlerFactory   (GpUnitTestHandlerFactory::SP aFactory);    
-    void                            RunAndWaitForDone   (void);
+    void                        RunAndWaitForDone   (void) noexcept;
 
     template<typename UnitTestSuiteGroupT>
-    void                            AddGroupTest        (GpUnitTest::FnT    aTestFn,
-                                                         std::string        aGroupName,
-                                                         std::string        aTestName,
-                                                         std::string        aTestCommment);
+    void                        AddGroupTest        (GpUnitTest::FnT    aTestFn,
+                                                     std::string        aGroupName,
+                                                     std::string        aTestName,
+                                                     std::string        aTestCommment);
 
 private:
-    void                            AddGroupTest        (UnitTestSuiteGroupFactoryFnT   aUnitTestSuiteGroupFactoryFn,
-                                                         std::string_view               aUnitTestSuiteGroupTypeDemangleName,
-                                                         GpUnitTest::FnT                aTestFn,
-                                                         std::string                    aGroupName,
-                                                         std::string                    aTestName,
-                                                         std::string                    aTestCommment);
-    DoneFutureT::C::Vec::SP         StartRunners        (SharedQueueT::SP&                          aSharedQueue,
-                                                         std::vector<GpUnitTestHandlerStatistics>&  aStatistics,
-                                                         std::atomic_bool&                          aIsProduceDoneRef) NO_THREAD_SAFETY_ANALYSIS;
-    void                            ProduceTests        (SharedQueueT&              aSharedQueue,
-                                                         std::atomic_bool&          aIsProduceDoneRef) NO_THREAD_SAFETY_ANALYSIS;
-    void                            WaitForRunners      (DoneFutureT::C::Vec::SP&   aTestRunnerDoneFutures);
-    bool                            OnDone              (const std::vector<GpUnitTestHandlerStatistics>&    aStatistics,
-                                                         GpUnitTestHandler&                                 aManagerHandler);
+    void                        AddGroupTest        (UnitTestSuiteGroupFactoryFnT   aUnitTestSuiteGroupFactoryFn,
+                                                     std::string_view               aUnitTestSuiteGroupTypeDemangleName,
+                                                     GpUnitTest::FnT                aTestFn,
+                                                     std::string                    aGroupName,
+                                                     std::string                    aTestName,
+                                                     std::string                    aTestCommment);
+    DoneFutureT::C::Vec::SP     StartRunners        (ExecQueueT::SP aExecQueueSP) noexcept;
+    void                        RunTests            (ExecQueueT::SP aExecQueueSP) noexcept;
+    GpUnitTestHandlerStatistics::C::Vec::Val
+                                WaitForRunners      (DoneFutureT::C::Vec::SP&   aTestRunnerDoneFutures);
+    bool                        OnDone              (const GpUnitTestHandlerStatistics::C::Vec::Val&    aStatistics,
+                                                     GpUnitTestHandler&                                 aManagerHandler);
 
 private:
-    mutable GpMutex                 iMutex;
-    bool                            iIsRun          GUARDED_BY(iMutex) = false;
+    mutable GpMutex<>               iMutex;
     GpUnitTestGroup::C::MapStr::SP  iTestGroups     GUARDED_BY(iMutex);
-    GpUnitTestHandlerFactory::SP    iHandlerFactory GUARDED_BY(iMutex);
+    bool                            iIsEnableToAdd  GUARDED_BY(iMutex) = true;
 };
 
 template<typename UnitTestSuiteGroupT>

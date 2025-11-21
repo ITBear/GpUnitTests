@@ -11,17 +11,9 @@ GpUnitTestAppMainTaskFactory::~GpUnitTestAppMainTaskFactory (void) noexcept
 {
 }
 
-GpServiceMainTask::SP   GpUnitTestAppMainTaskFactory::NewInstance
-(
-    const GpServiceArgBaseDesc& aServiceArgsDesc,
-    const GpServiceCfgBaseDesc& aServiceCfgDesc
-) const
+GpServiceMainTask::SP   GpUnitTestAppMainTaskFactory::NewInstance (void) const
 {
-    return MakeSP<GpUnitTestAppMainTask>
-    (
-        aServiceArgsDesc,
-        aServiceCfgDesc
-    );
+    return MakeSP<GpUnitTestAppMainTask>();
 }
 
 }// namespace GPlatform::UnitTest

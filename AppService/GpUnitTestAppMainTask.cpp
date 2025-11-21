@@ -6,16 +6,7 @@
 
 namespace GPlatform::UnitTest {
 
-GpUnitTestAppMainTask::GpUnitTestAppMainTask
-(
-    const GpServiceArgBaseDesc& aServiceArgsDesc,
-    const GpServiceCfgBaseDesc& aServiceCfgDesc
-) noexcept:
-GpServiceMainTask
-{
-    aServiceArgsDesc,
-    aServiceCfgDesc
-}
+GpUnitTestAppMainTask::GpUnitTestAppMainTask (void) noexcept
 {
 }
 
@@ -26,14 +17,6 @@ GpUnitTestAppMainTask::~GpUnitTestAppMainTask (void) noexcept
 void    GpUnitTestAppMainTask::OnStart (void)
 {
     LOG_INFO("[GpUnitTestAppMainTask::OnStart]: start..."_sv);
-
-    // Get service config
-    const GpUnitTestAppCfgDesc& serviceCfgDesc = ServiceCfgDescAs<GpUnitTestAppCfgDesc>();
-    GpUnitTestAppCfgDesc::SRegister(serviceCfgDesc);
-
-    // Get cmd line args
-    const GpUnitTestAppCmdArgsDesc& cmdLineArgsDesc = ServiceArgsDescAs<GpUnitTestAppCmdArgsDesc>();
-    GpUnitTestAppCmdArgsDesc::SRegister(cmdLineArgsDesc);
 
     LOG_INFO("[GpUnitTestAppMainTask::OnStart]: successfully started"_sv);
 }

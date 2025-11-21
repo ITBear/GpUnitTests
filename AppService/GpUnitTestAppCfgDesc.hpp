@@ -17,9 +17,6 @@ public:
                                         GpUnitTestAppCfgDesc    (GpUnitTestAppCfgDesc&& aDesc) noexcept;
     virtual                             ~GpUnitTestAppCfgDesc   (void) noexcept override final;
 
-    static const GpUnitTestAppCfgDesc&  SGet                    (void);
-    static void                         SRegister               (const GpUnitTestAppCfgDesc& aServiceCfgDesc);
-
 public:
 };
 

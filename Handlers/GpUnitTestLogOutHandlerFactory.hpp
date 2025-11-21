@@ -15,7 +15,7 @@ public:
                                     GpUnitTestLogOutHandlerFactory  (void) noexcept = default;
     virtual                         ~GpUnitTestLogOutHandlerFactory (void) noexcept override final = default;
 
-    virtual GpSP<GpUnitTestHandler> NewInstance                     (void) noexcept override final;
+    virtual GpUnitTestHandler::UP   NewInstance                     (void) noexcept override final;
 };
 
 }// namespace GPlatform::UnitTest

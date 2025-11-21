@@ -2,6 +2,15 @@
 
 namespace GPlatform::UnitTest {
 
+GpUnitTestLayeredHandler::GpUnitTestLayeredHandler (void) noexcept
+{
+}
+
+GpUnitTestLayeredHandler::GpUnitTestLayeredHandler (GpUnitTestHandler::SP aSublayerHandler) noexcept:
+iSublayerHandler{std::move(aSublayerHandler)}
+{
+}
+
 GpUnitTestLayeredHandler::~GpUnitTestLayeredHandler (void) noexcept
 {
 }

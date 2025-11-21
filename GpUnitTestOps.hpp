@@ -54,7 +54,7 @@ void    _ON_TEST_FAILED
         throw GpUnitTestAssert(message, aLocation);
     } else // Mode == GpUnitTestFailMode::EXPECT
     {
-        GpUnitTestRunner::SRunnerByCurrentTask().OnTestFailedExpect(message, aLocation);
+        GpUnitTestRunner::SRunnerByCurrentTask().Vn().OnTestFailedExpect(message, aLocation);
     }
 }
 
@@ -93,11 +93,11 @@ void    _CMP_VALUES
 #define _MACRO_STRINGIFY_(ARG) #ARG
 
 // ----------------------------------------- TRUE -----------------------------------------
-#define EXPECT_TRUE(ARG1)                   _EXPECT_TRUE(ARG1, {},           (_MACRO_STRINGIFY_(ARG1)))
-#define EXPECT_TRUE_MSG(ARG1, USER_MESSAGE) _EXPECT_TRUE(ARG1, USER_MESSAGE, (_MACRO_STRINGIFY_(ARG1)))
+#define EXPECT_TRUE(ARG1)                   _EXPECT_TRUE((ARG1), {},           (_MACRO_STRINGIFY_(ARG1)))
+#define EXPECT_TRUE_MSG(ARG1, USER_MESSAGE) _EXPECT_TRUE((ARG1), USER_MESSAGE, (_MACRO_STRINGIFY_(ARG1)))
 
-#define ASSERT_TRUE(ARG1)                   _ASSERT_TRUE(ARG1, {},           (_MACRO_STRINGIFY_(ARG1)))
-#define ASSERT_TRUE_MSG(ARG1, USER_MESSAGE) _ASSERT_TRUE(ARG1, USER_MESSAGE, (_MACRO_STRINGIFY_(ARG1)))
+#define ASSERT_TRUE(ARG1)                   _ASSERT_TRUE((ARG1), {},           (_MACRO_STRINGIFY_(ARG1)))
+#define ASSERT_TRUE_MSG(ARG1, USER_MESSAGE) _ASSERT_TRUE((ARG1), USER_MESSAGE, (_MACRO_STRINGIFY_(ARG1)))
 
 template<GpUnitTestFailMode Mode>
 void    _CHECK_IF_TRUE
@@ -115,7 +115,7 @@ void    _CHECK_IF_TRUE
         _t,
         aUserMessageOnError,
         aLocation,
-        [](const auto& a, const auto& b)->bool{return a == b;},
+        [](const auto& a, const auto& b)->bool{return a == static_cast<const decltype(a)&>(b);},
         "EQUAL"_sv,
         aArg1AsSrcText,
         "true"_sv
@@ -157,11 +157,11 @@ inline void _ASSERT_TRUE
 }
 
 // ----------------------------------------- FALSE -----------------------------------------
-#define EXPECT_FALSE(ARG1)                   _EXPECT_FALSE(ARG1, {},           (_MACRO_STRINGIFY_(ARG1)))
-#define EXPECT_FALSE_MSG(ARG1, USER_MESSAGE) _EXPECT_FALSE(ARG1, USER_MESSAGE, (_MACRO_STRINGIFY_(ARG1)))
+#define EXPECT_FALSE(ARG1)                   _EXPECT_FALSE((ARG1), {},           (_MACRO_STRINGIFY_(ARG1)))
+#define EXPECT_FALSE_MSG(ARG1, USER_MESSAGE) _EXPECT_FALSE((ARG1), USER_MESSAGE, (_MACRO_STRINGIFY_(ARG1)))
 
-#define ASSERT_FALSE(ARG1)                   _ASSERT_FALSE(ARG1, {},           (_MACRO_STRINGIFY_(ARG1)))
-#define ASSERT_FALSE_MSG(ARG1, USER_MESSAGE) _ASSERT_FALSE(ARG1, USER_MESSAGE, (_MACRO_STRINGIFY_(ARG1)))
+#define ASSERT_FALSE(ARG1)                   _ASSERT_FALSE((ARG1), {},           (_MACRO_STRINGIFY_(ARG1)))
+#define ASSERT_FALSE_MSG(ARG1, USER_MESSAGE) _ASSERT_FALSE((ARG1), USER_MESSAGE, (_MACRO_STRINGIFY_(ARG1)))
 
 template<GpUnitTestFailMode Mode>
 void    _CHECK_IF_FALSE
@@ -179,7 +179,7 @@ void    _CHECK_IF_FALSE
         _f,
         aUserMessageOnError,
         aLocation,
-        [](const auto& a, const auto& b)->bool{return a == b;},
+        [](const auto& a, const auto& b)->bool{return a == static_cast<const decltype(a)&>(b);},
         "EQUAL"_sv,
         aArg1AsSrcText,
         "false"_sv
@@ -221,11 +221,11 @@ inline void _ASSERT_FALSE
 }
 
 // ----------------------------------------- EQ -----------------------------------------
-#define EXPECT_EQ(ARG1, ARG2)                   _EXPECT_EQ(ARG1, ARG2, {},           std::string_view(_MACRO_STRINGIFY_(ARG1)), (_MACRO_STRINGIFY_(ARG2)))
-#define EXPECT_EQ_MSG(ARG1, ARG2, USER_MESSAGE) _EXPECT_EQ(ARG1, ARG2, USER_MESSAGE, std::string_view(_MACRO_STRINGIFY_(ARG1)), (_MACRO_STRINGIFY_(ARG2)))
+#define EXPECT_EQ(ARG1, ARG2)                   _EXPECT_EQ(ARG1, (ARG2), {},           std::string_view(_MACRO_STRINGIFY_(ARG1)), (_MACRO_STRINGIFY_(ARG2)))
+#define EXPECT_EQ_MSG(ARG1, ARG2, USER_MESSAGE) _EXPECT_EQ(ARG1, (ARG2), USER_MESSAGE, std::string_view(_MACRO_STRINGIFY_(ARG1)), (_MACRO_STRINGIFY_(ARG2)))
 
-#define ASSERT_EQ(ARG1, ARG2)                   _ASSERT_EQ(ARG1, ARG2, {},           std::string_view(_MACRO_STRINGIFY_(ARG1)), (_MACRO_STRINGIFY_(ARG2)))
-#define ASSERT_EQ_MSG(ARG1, ARG2, USER_MESSAGE) _ASSERT_EQ(ARG1, ARG2, USER_MESSAGE, std::string_view(_MACRO_STRINGIFY_(ARG1)), (_MACRO_STRINGIFY_(ARG2)))
+#define ASSERT_EQ(ARG1, ARG2)                   _ASSERT_EQ(ARG1, (ARG2), {},           std::string_view(_MACRO_STRINGIFY_(ARG1)), (_MACRO_STRINGIFY_(ARG2)))
+#define ASSERT_EQ_MSG(ARG1, ARG2, USER_MESSAGE) _ASSERT_EQ(ARG1, (ARG2), USER_MESSAGE, std::string_view(_MACRO_STRINGIFY_(ARG1)), (_MACRO_STRINGIFY_(ARG2)))
 
 template<typename           T1,
          typename           T2,
@@ -246,7 +246,7 @@ void    _CHECK_EQ
         aArg2,
         aUserMessageOnError,
         aLocation,
-        [](const auto& a, const auto& b)->bool{return a == b;},
+        [](const auto& a, const auto& b)->bool{return a == static_cast<const decltype(a)&>(b);},
         "EQUAL"_sv,
         aArg1AsSrcText,
         aArg2AsSrcText
@@ -300,11 +300,11 @@ void    _ASSERT_EQ
 }
 
 // ----------------------------------------- NOT EQ -----------------------------------------
-#define EXPECT_NOT_EQ(ARG1, ARG2)                   _EXPECT_NOT_EQ(ARG1, ARG2, {},           (_MACRO_STRINGIFY_(ARG1)), (_MACRO_STRINGIFY_(ARG2)))
-#define EXPECT_NOT_EQ_MSG(ARG1, ARG2, USER_MESSAGE) _EXPECT_NOT_EQ(ARG1, ARG2, USER_MESSAGE, (_MACRO_STRINGIFY_(ARG1)), (_MACRO_STRINGIFY_(ARG2)))
+#define EXPECT_NOT_EQ(ARG1, ARG2)                   _EXPECT_NOT_EQ((ARG1), (ARG2), {},           (_MACRO_STRINGIFY_(ARG1)), (_MACRO_STRINGIFY_(ARG2)))
+#define EXPECT_NOT_EQ_MSG(ARG1, ARG2, USER_MESSAGE) _EXPECT_NOT_EQ((ARG1), (ARG2), USER_MESSAGE, (_MACRO_STRINGIFY_(ARG1)), (_MACRO_STRINGIFY_(ARG2)))
 
-#define ASSERT_NOT_EQ(ARG1, ARG2)                   _ASSERT_NOT_EQ(ARG1, ARG2, {},           (_MACRO_STRINGIFY_(ARG1)), (_MACRO_STRINGIFY_(ARG2)))
-#define ASSERT_NOT_EQ_MSG(ARG1, ARG2, USER_MESSAGE) _ASSERT_NOT_EQ(ARG1, ARG2, USER_MESSAGE, (_MACRO_STRINGIFY_(ARG1)), (_MACRO_STRINGIFY_(ARG2)))
+#define ASSERT_NOT_EQ(ARG1, ARG2)                   _ASSERT_NOT_EQ((ARG1), (ARG2), {},           (_MACRO_STRINGIFY_(ARG1)), (_MACRO_STRINGIFY_(ARG2)))
+#define ASSERT_NOT_EQ_MSG(ARG1, ARG2, USER_MESSAGE) _ASSERT_NOT_EQ((ARG1), (ARG2), USER_MESSAGE, (_MACRO_STRINGIFY_(ARG1)), (_MACRO_STRINGIFY_(ARG2)))
 
 template<typename           T1,
          typename           T2,
@@ -325,7 +325,7 @@ void    _CHECK_NOT_EQ
         aArg2,
         aUserMessageOnError,
         aLocation,
-        [](const auto& a, const auto& b)->bool{return a != b;},
+        [](const auto& a, const auto& b)->bool{return a != static_cast<const decltype(a)&>(b);},
         "NOT EQUAL"_sv,
         aArg1AsSrcText,
         aArg2AsSrcText
@@ -401,7 +401,7 @@ void    EXPECT_EXCEPTION
 
             if (checkExRes.has_value())
             {
-                GpUnitTestRunner::SRunnerByCurrentTask().OnTestFailedExpect
+                GpUnitTestRunner::SRunnerByCurrentTask().Vn().OnTestFailedExpect
                 (
                     fmt::format
                     (
@@ -420,7 +420,7 @@ void    EXPECT_EXCEPTION
     } catch(const std::exception& e)
     {
         // Caught the wrong exception
-        GpUnitTestRunner::SRunnerByCurrentTask().OnTestFailedExpect
+        GpUnitTestRunner::SRunnerByCurrentTask().Vn().OnTestFailedExpect
         (
             fmt::format
             (
@@ -434,7 +434,7 @@ void    EXPECT_EXCEPTION
     } catch(...)
     {
         // Caught the wrong exception
-        GpUnitTestRunner::SRunnerByCurrentTask().OnTestFailedExpect
+        GpUnitTestRunner::SRunnerByCurrentTask().Vn().OnTestFailedExpect
         (
             "Caught the wrong unknown exception",
             aLocation
@@ -444,7 +444,7 @@ void    EXPECT_EXCEPTION
     }
 
     // Caught no exception
-    GpUnitTestRunner::SRunnerByCurrentTask().OnTestFailedExpect
+    GpUnitTestRunner::SRunnerByCurrentTask().Vn().OnTestFailedExpect
     (
         fmt::format
         (
